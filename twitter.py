@@ -1,3 +1,5 @@
+import os
+import dotenv
 from requests_oauthlib import OAuth1Session
 
 dotenv.load_dotenv('.env')
@@ -41,3 +43,20 @@ def tweet(status):
 
 temp = tweet("testing post")
 temp1 = tweet("testing comment 1", 1240733416393281536)
+
+
+#goes through the tweets comments
+# def read_comment():
+
+
+def dm_player(playerID, message):
+    resp = session.post({'type': 'message_create', 'message_create.target.recipient_id': playerID, 'message_create.message_data': {'text': message}})
+    print(resp.text)
+
+
+# # The contents of status (i.e. tweet text)
+# status = 'If you are reading this on Twitter, the API request worked! 2nd try'
+# # Send a POST request to the url with a 'status' parameter
+# resp = session.post(url, { 'status': status })
+# # Show the text from the response
+# print(resp.text)
