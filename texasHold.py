@@ -82,7 +82,7 @@ class TexasHold(object):
             #go through each player and to get their bets
             for player in self.players:
                 #players can only bet if they haven't folded yet
-                if not player.fold:
+                if not player.fold and player.chips!=0:
                     #ask for user input for bet, only will take num >= -1
                     valid = False
                     #player inputs bet and then program checks if bet is above the bet as a whole
@@ -106,17 +106,21 @@ class TexasHold(object):
         if value == 0:     
             #for when the player is calling
             if player.bet<currBet:
-                #if the player does'nt have enough to call
+                #if the player doesn't have enough to call
                 if player.chips < currBet-player.bet:
-                    print("you don't have enough for that")
-                    return False
-                self.pot+=currBet-player.bet
-                player.bet = currBet
-                player.chip-=
+                    print("not enough to call, you are instead going all in")
+                    #gives the pot the rest of the players chips
+                    self.pot+=player.chips  
+                    player.chips = 0
+                else:
+                    #subtracts the necessary chips from the player and gives them to the pot
+                    player.chips-=currBet-player.bet    
+                    self.pot+=currBet-player.bet        
+                player.bet = currBet    #makes the players current bet match the round's current bet
             return True
         #if the player raises 
         elif value > 0:   
-            #if the player raises more than they have
+            #if the player raises more than they have then return false
             if value>player.chips:
                 print("you don't have enough for that")
                 return False
@@ -194,4 +198,4 @@ class TexasHold(object):
 # temp1 = requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(deckID))
     
 # print(temp1.text)
-# # print(temp)
+# # print(temp) 
