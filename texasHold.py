@@ -18,3 +18,17 @@ class TexasHold(object):
         self.pot = 0          #current pot for the the round
         self.deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1").json()    #gets API request for a new deck and converts it to json
         self.deckID = self.deck["deck_id"]      #deck ID
+
+    #function to add a player to the game, draws 2 cards for them
+    #param: user(twitter user name/id string)
+    #return: none
+    def add_player(self, user):
+        #creates new player and adds it to the player list
+        player = Player(user)       
+        #draws cards and adds it to the players pile (hand)
+        self.draw_to_pile(2, user)
+        #adds the card codes to the players hand
+        req = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, user)).json()
+        for card in req["piles"][user]["cards"]:
+            player.append(card["code"])
+        self.players[user] = Player(user)
