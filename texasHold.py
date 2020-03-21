@@ -67,3 +67,29 @@ class TexasHold(object):
             self.river.append(faceUp[3])     #1st reveal
             self.bettingPhase()              #2nd betting phase
             self.river.append(faceUp[4])     #final reveal
+
+    #function that handles the betting phase
+    #param: none
+    #return: none
+    def betting_phase(self):
+        done = False
+        currBet = 0     #the current betting amoutn you have to meet for this round
+        timesBet = 0    #variable to make sure every player has been allwoed to try betting at least once
+        #keep betting until alll is done
+        while not done:
+            #loop through ech player to see thier bets
+            done = True
+            #go through each player and to get their bets
+            for player in self.players:
+                #players can only bet if they haven't folded yet
+                if not player.fold:
+                    #ask for user input for bet, only will take num >= -1
+                    valid = False
+                    #player inputs bet and then program checks if bet is above the bet as a whole
+                    while not valid:
+                        value = input("enter your bet (0 to check or call, -1 to fold): ")
+                        valid = self.betting(int(value), player, currBet)      
+                    if player.bet>currBet and timesBet>3:
+                        currBet = player.bet
+                        done = False
+                timesBet+=1
