@@ -165,3 +165,33 @@ class TexasHold(object):
                     return False
         return True
 
+     #checks if your hand is straight
+    #param: hand(list of ints of all hand values)
+    #return: bool(if a straight or not)
+    def is_straight(self, hand):
+        hand.sort()
+        for x in range(len(hand)):
+            if hand[x+1] != hand[x]+1:
+                return False
+        return True
+
+
+        
+            
+
+
+#notes: shuffling/reshuffling takes all the cards from the pile and puts them back into the main deck
+#       you can draw specific cards  isntead of jsut a general number
+#       you cant add cards directly to the deck
+
+# deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")    #makes a new deck for this game
+# deck = deck.json()
+# deckID  = deck["deck_id"]
+# drawn = requests.get("https://deckofcardsapi.com/api/deck/{}/draw/?cards=AS".format(deckID))
+# drawn = drawn.json()        #requests api to draw 2 cards ad then convert that response to json
+# temp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/sample/add/?cards=AS".format(deckID))
+# print(temp.text)
+# temp1 = requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(deckID))
+    
+# print(temp1.text)
+# # print(temp)
