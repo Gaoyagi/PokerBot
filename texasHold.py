@@ -157,6 +157,7 @@ class TexasHold(object):
         flush = is_flush(suits)
         straight = is_straight(values)
 
+
     #checks if your hand is a flush
     #param: hand(list of strings of all the suits)
     #return: bool(if a flush or not )
@@ -169,15 +170,40 @@ class TexasHold(object):
                     return False
         return True
 
-     #checks if your hand is straight
+    #checks if your hand is straight
     #param: hand(list of ints of all hand values)
-    #return: bool(if a straight or not)
+    #return: list that holds: bool(if a straight or not), highest value of Hand
     def is_straight(self, hand):
-        hand.sort()
+        hand.sort(revere=True)
         for x in range(len(hand)):
             if hand[x+1] != hand[x]+1:
-                return False
-        return True
+                return [False,hand[0]]
+        return [True, hand[0]]
+
+    #checks if your hand has any pairs, triples, full house, or quads
+    def num_of_a_kind(self, hand):
+        hand.sort(reverse=True)
+        sameCard = 0
+        value = []
+        #go through every value in the hand to find duplicates
+        for x in range(len(hand)):
+            #avoid finding duplicates for the same value
+            if hand[x+1] == hand[x]+1:
+                for y in range(len(hand)):
+                    if hand[x] == hand[y]:
+                        sameCard+=1
+                    else:
+                        break
+            if sameCard == 3:
+                value.append(("quad", hand[x]))
+                return value
+            elif sameCard == 2:
+                value.append(("tripple", hand[x]))
+            elif sameCard == 1:
+                value.append(("pair", hand[x]))
+                
+        return [True, hand[0]]
+    
 
 
         
