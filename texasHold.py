@@ -131,3 +131,25 @@ class TexasHold(object):
             print("not a valid")
             return False
 
+
+    #function for identifying value of your hand
+    def hand_value(self, player):
+        suits = []  #list to hold all card's suit
+        values = []  #list to hold all card's values
+        #breaks the cards up into suits and values
+        for card in self.hand:
+            value = card[0]
+            #checks if the value code is a face card or ACE
+            if value == "J":
+                value = 11
+            elif value == "Q":
+                value = 12
+            elif value == "K":
+                value = 13
+            elif value == "A":
+                value = 14
+            values.append(int(value))   #add to the list of hand values
+            suits.append(card[1])       #add to the lsit of hand suits
+        flush = is_flush(suits)
+        straight = is_straight(values)
+
