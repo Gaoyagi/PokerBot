@@ -29,7 +29,7 @@ class TexasHold(object):
         #goes through the drawn cards and adds it to pile
         for card in drawn["cards"]: 
             requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/add/?cards={}".format(self.deckID, pile, card["code"]))
-            
+
     #function to add a player to the game, draws 2 cards for them
     #param: user(twitter user name/id string)
     #return: none
@@ -43,3 +43,27 @@ class TexasHold(object):
         for card in req["piles"][user]["cards"]:
             player.append(card["code"])
         self.players[user] = Player(user)
+
+    #running a round texas hold em
+    #param & return: none
+    def round(self):
+        phase = 0
+        # each round has 3 card reveal phases
+        while phase<3:
+            #check of the deck has enouch cards left for a full round and if not reshuffle
+            if self.deck["remaining"] < 16:
+                requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(self.deckID))
+            #deals all the players in
+            for key, _ in self.players:
+                self.add_player()
+            #make the river 
+            self.river()
+            getRiver = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river")).json()
+            faceUp = river["piles"]["river"]["cards"]
+            # reveal the first 3 cards
+            for x in range(3):
+                self.river.append(faceUp[x])
+            self.bettingPhase()              #betting phase 1
+            self.river.append(faceUp[3])     #1st reveal
+            self.bettingPhase()              #2nd betting phase
+            self.river.append(faceUp[4])     #final reveal
