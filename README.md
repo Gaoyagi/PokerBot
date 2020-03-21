@@ -14,30 +14,26 @@ Deck of Cards API
 Twitter API
 
 ##  Breakdown:
-Twitter.py: deals with posting tweets, comments, and Dm'ing players on twitter when needed
-TexasHold.py: deals with the workings of the game,
+- Twitter.py: deals with posting tweets, comments, and Dm'ing players on twitter when needed
+- TexasHold.py: deals with the workings of the game,
 
 
 ## TODO:
-Twitter.py:
-    Be able to tweet  [ ]
-    be able to reply to a tweet [ ]
-    be able to DM players [ ]
-    Read through comments  [ ]
-    be able to take the contents of a replay and figure what actions was done [ ]
+#twitter.py:
+- Be able to tweet  [x]
+- be able to reply to a tweet [x]
+- be able to DM players [ ]
+- Read through comments  [ ]
+- be able to take the contents of a replay and figure what actions was done [ ]
 
-texashold.py:
-    make a players object [ ]
-    create a new deck [ ]
-    make a game object [ ]
-    add a draw function [ ]
-    add a shuffle functionality [ ]
-    add a bet functionality [ ]
-    add round end condition [ ]
-    be able to last more than 1 round [  ]
-    
+#texasHold.py:
+-  make a players object [x]
+- create a new deck [x]
+- make a game object [x]
+- add a draw function [x]
+- add a shuffle functionality [ ]
+- add a bet functionality [x]
+- add round end condition [ ]
+- be able to last more than 1 round [  ]
 
-
-
-
-
+#texasHold_test.py
