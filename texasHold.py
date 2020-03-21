@@ -19,6 +19,17 @@ class TexasHold(object):
         self.deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1").json()    #gets API request for a new deck and converts it to json
         self.deckID = self.deck["deck_id"]      #deck ID
 
+    #draws a card from a deck or a pile and adds it to another pile
+    #param: num(number of cards you want to draw), pile(pile name that you want to put the cards)
+    #return: none
+    def draw_to_pile(self, num, pile):
+        #sends API request to draw cards and converts response to json dic
+        drawn = requests.get("https://deckofcardsapi.com/api/deck/{}}/draw/?count={}".format(self.deckID), num)
+        drawn = drawn.json()
+        #goes through the drawn cards and adds it to pile
+        for card in drawn["cards"]: 
+            requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/add/?cards={}".format(self.deckID, pile, card["code"]))
+            
     #function to add a player to the game, draws 2 cards for them
     #param: user(twitter user name/id string)
     #return: none
