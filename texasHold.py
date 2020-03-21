@@ -153,3 +153,15 @@ class TexasHold(object):
         flush = is_flush(suits)
         straight = is_straight(values)
 
+    #checks if your hand is a flush
+    #param: hand(list of strings of all the suits)
+    #return: bool(if a flush or not )
+    def is_flush(self, hand):
+        suits = ["H", "S", "D", "C"]
+        temp = hand[0]
+        for suit in suits:
+            if suit in hand:
+                if suit!=temp:
+                    return False
+        return True
+
