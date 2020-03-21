@@ -93,3 +93,41 @@ class TexasHold(object):
                         currBet = player.bet
                         done = False
                 timesBet+=1
+
+    #checks if a player bet is a call, raise, check, or a fold. then changes the pot and player's bet accordingly
+    #param: user string whos betting, amount number that theyre betting
+    #return: Bool for if the bet was valid or not
+    def betting(self, value, player, currBet):
+        #if the player folds
+        if value == -1:     
+            player.fold = True
+            return True
+        #if the player checks or calls
+        if value == 0:     
+            #for when the player is calling
+            if player.bet<currBet:
+                #if the player does'nt have enough to call
+                if player.chips < currBet-player.bet:
+                    print("you don't have enough for that")
+                    return False
+                self.pot+=currBet-player.bet
+                player.bet = currBet
+                player.chip-=
+            return True
+        #if the player raises 
+        elif value > 0:   
+            #if the player raises more than they have
+            if value>player.chips:
+                print("you don't have enough for that")
+                return False
+            #if the bet is either too low or it only calls the bet then return false
+            if player.bet+value <= currBet:
+                print("invalid, bet too low")
+                return False
+            player.bet+=value
+            self.pot+=value
+            return True
+        else:
+            print("not a valid")
+            return False
+
