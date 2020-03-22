@@ -2,7 +2,7 @@ import requests
 
 
 class Player(object):
-    def __init__(self, user):
+    def __init__(self, user=""):
         self.hand = []
         self.chips = 200
         self.user = user
@@ -48,26 +48,41 @@ class TexasHold(object):
     #running a round texas hold em
     #param & return: none
     def round(self):
-        phase = 0
-        # each round has 3 card reveal phases
-        while phase<3:
-            #check of the deck has enouch cards left for a full round and if not reshuffle
-            if self.deck["remaining"] < 16:
-                requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(self.deckID))
-            #deals all the players in
-            for key, _ in self.players:
-                self.add_player()
-            #make the river 
-            self.river()
-            getRiver = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river")).json()
-            faceUp = river["piles"]["river"]["cards"]
-            # reveal the first 3 cards
-            for x in range(3):
-                self.river.append(faceUp[x])
-            self.bettingPhase()              #betting phase 1
-            self.river.append(faceUp[3])     #1st reveal
-            self.bettingPhase()              #2nd betting phase
-            self.river.append(faceUp[4])     #final reveal
+        #check of the deck has enouch cards left for a full round and if not reshuffle
+        if self.deck["remaining"] < 16:
+            requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(self.deckID))
+        #deals all the players in
+        for key, _ in self.players:
+            self.add_player()
+        #make the river 
+        self.river()
+        getRiver = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river")).json()
+        faceUp = river["piles"]["river"]["cards"]
+        # reveal the first 3 cards
+        for x in range(3):
+            self.river.append(faceUp[x])
+        self.bettingPhase()              #betting phase 1
+        self.river.append(faceUp[3])     #1st reveal
+        self.bettingPhase()              #2nd betting phase
+        self.river.append(faceUp[4])     #final reveal
+        strongest = Player()
+        #go through each player and see which one has the best hand
+        for player in self.players:
+            strength = optimal_hand(player.hand, self.river)
+            if strength[0] < strongest.strength[0]:
+                strongest = player
+            #if the hand strength ties, check which one has the highest card
+            elif strength[0] == strongest[0]:
+                if strength[1]>strongest[1]:
+                    strongest = player
+        #ending the round and  declaring the winner,giving them the chips from the pot
+        print(f"the winner of this round is {strongest.user}, wining {self.pot} chips!")
+        strongest.player.chips+=self.pot
+        self.pot = 0
+        #looping through each player and reducing their bets down to 0
+        for player  in self.players:
+            player.bet = 0
+
 
     #function that handles the betting phase
     #param: none
@@ -135,7 +150,6 @@ class TexasHold(object):
         else:
             print("not a valid")
             return False
-
 
     #function for identifying value of your hand
     #param: player object(player whose hand to evaluate)
@@ -242,23 +256,35 @@ class TexasHold(object):
                 
         return [True, hand[0]]
     
+    #goes through every combination to find the strongest hand for a player
+    #param: hand(list of the players card codes) and River(list of the card codes in the river)
+    #return: Tuple(contining the hand strength and the highest value card in that combo)
     def optimal_hand(self, hand, river):
-        temp = hand
-        strength = []
-        self.river.sort(reverse=True)
+        temp = hand                     #the holder for what current hand iteration is
+        strength = []                   #list of every possible hand strength
+        self.river.sort(reverse=True)   #sort the river by descending order
+        #loop through every hand card combination
         for x in range(len(self.river)):
-            temp.append(hand[0])
+            temp.append(hand[0])                #append first card
             for y in range(len(self.river)-1):
+                #make sure you arent testing a card being currently used
                 if y!=x:
-                    temp.append(hand[0])
+                    temp.append(hand[0])        #append 2nd card
                     for z in range(len(self.river)-2):
-                        if z!=x:
-                            temp.append(hand[0])
-                            strength.append(self.hand_value(temp))
+                        #make sure you arent testing a card being currently used
+                        if z!=x and z!=y:
+                            temp.append(hand[0])#append 3rd card
+                            strength.append(self.hand_value(temp)) #add the strength of the current hand combination
+                            del temp[len(temp)-1]                  #deletes the 3rd test card
+                del temp[len(temp)-1]   #deletes the 2nd test card
+            del temp[0]                 #deletes the 1st test card
+        #check to find the strongest possible combo 
         strongest = strength[0]
         for combo in strength:
+            #check if the ranking of the strength is lower  (lower is stronger)
             if strongest[0] > combo[0]:
                 strongest = combo
+            #if tie, check the strength of each other hand's high card
             elif strongest[0] ==  combo[0]:
                 if strongest[1] < combo[1]:
                     strongest = combo
