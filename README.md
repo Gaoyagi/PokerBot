@@ -19,14 +19,14 @@ Twitter API
 
 
 ## TODO:
-#twitter.py:
+# twitter.py:
 - Be able to tweet  [x]
 - be able to reply to a tweet [x]
 - be able to DM players [ ]
 - Read through comments  [ ]
 - be able to take the contents of a replay and figure what actions was done [ ]
 
-#texasHold.py:
+# texasHold.py:
 -  make a players object [x]
 - create a new deck [x]
 - make a game object [x]
@@ -36,4 +36,4 @@ Twitter API
 - add round end condition [ ]
 - be able to last more than 1 round [  ]
 
-#texasHold_test.py
+# texasHold_test.py

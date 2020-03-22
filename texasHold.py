@@ -137,11 +137,48 @@ class TexasHold(object):
 
 
     #function for identifying value of your hand
+    #param: player object(player whose hand to evaluate)
+    #return: tuple of an int (signifying how strong the hand is), and the highest int number for that hand(for ties) 
     def hand_value(self, player):
         suits = []  #list to hold all card's suit
         values = []  #list to hold all card's values
+        self. suits_and_values(player, values, suits)
+
+        flush = is_flush(suits)
+        straight = is_straight(values)
+        numOfAKind = num_of_a_kind(values)
+
+        #check if its a straight flush
+        if flush and straight[0]:
+            return (1,straight[1])
+        #check if its a 4 of a kind
+        elif numOfAKind[0][0] == "quad":
+            return (2, numOfAKind[0][1])
+        #check for full house, the high card int is only for comparing triples
+        elif len(numOfAKind)>1:
+            if numOfAKind[0][0] == "pair" and numOfAKind[1][0] == "triple":
+                return (3, numOfAKind[1][1])
+            if numOfAKind[0][0] == "triple" and numOfAKind[1][0] == "pair":
+                return (3, numOfAKind[0][1])
+        #check of the hand is a flush
+        elif flush:
+            return (4)
+        #check for straight
+        elif straight[0]:
+            return (5,straight[1])
+        #check for triples
+        elif numOfAKind[0][0] == "triple":
+            return (6,numOfAKind[0][1])
+        #check for a pair, returns an extra int for high card in case the pair's tie
+        elif numOfAKind[0][0] == "pair":
+            return (7,numOfAKind[0][1], values[0])
+        #check for high card
+        else:
+            return (8, values[0])
+        
+    def suits_and_values(self, player, values, suits):
         #breaks the cards up into suits and values
-        for card in self.hand:
+        for card in player.hand:
             value = card[0]
             #checks if the value code is a face card or ACE
             if value == "J":
@@ -154,9 +191,7 @@ class TexasHold(object):
                 value = 14
             values.append(int(value))   #add to the list of hand values
             suits.append(card[1])       #add to the lsit of hand suits
-        flush = is_flush(suits)
-        straight = is_straight(values)
-
+        values.sort(revere=True)    
 
     #checks if your hand is a flush
     #param: hand(list of strings of all the suits)
@@ -174,31 +209,33 @@ class TexasHold(object):
     #param: hand(list of ints of all hand values)
     #return: list that holds: bool(if a straight or not), highest value of Hand
     def is_straight(self, hand):
-        hand.sort(revere=True)
         for x in range(len(hand)):
             if hand[x+1] != hand[x]+1:
                 return [False,hand[0]]
         return [True, hand[0]]
 
-    #checks if your hand has any pairs, triples, full house, or quads
+    #checks if your hand has any pairs, triples, or quads
+    #param:hand(list of ints of all the hand values)
+    #return: a list of tuples contatining if its  a quad,tiple, or a pair, and what value it is
     def num_of_a_kind(self, hand):
-        hand.sort(reverse=True)
         sameCard = 0
         value = []
+        alreadyFound = []
         #go through every value in the hand to find duplicates
         for x in range(len(hand)):
-            #avoid finding duplicates for the same value
-            if hand[x+1] == hand[x]+1:
+            #avoid finding __ of a kind for the same value
+            if hand[x] not in alreadyFound:
                 for y in range(len(hand)):
                     if hand[x] == hand[y]:
                         sameCard+=1
                     else:
                         break
+            alreadyFound.append(hand[x])
             if sameCard == 3:
                 value.append(("quad", hand[x]))
                 return value
             elif sameCard == 2:
-                value.append(("tripple", hand[x]))
+                value.append(("triple", hand[x]))
             elif sameCard == 1:
                 value.append(("pair", hand[x]))
                 
