@@ -8,7 +8,8 @@ class Player(object):
         self.user = user
         self.fold = False
         self.value = ""
-        self.bet
+        self.bet = 0
+        self.strength = None
 
 class TexasHold(object):
     def __init__(self):
@@ -139,10 +140,10 @@ class TexasHold(object):
     #function for identifying value of your hand
     #param: player object(player whose hand to evaluate)
     #return: tuple of an int (signifying how strong the hand is), and the highest int number for that hand(for ties) 
-    def hand_value(self, player):
+    def hand_value(self, hand):
         suits = []  #list to hold all card's suit
         values = []  #list to hold all card's values
-        self. suits_and_values(player, values, suits)
+        self. suits_and_values(hand, values, suits)
 
         flush = is_flush(suits)
         straight = is_straight(values)
@@ -176,9 +177,9 @@ class TexasHold(object):
         else:
             return (8, values[0])
         
-    def suits_and_values(self, player, values, suits):
+    def suits_and_values(self, hand, values, suits):
         #breaks the cards up into suits and values
-        for card in player.hand:
+        for card in hand:
             value = card[0]
             #checks if the value code is a face card or ACE
             if value == "J":
@@ -241,10 +242,34 @@ class TexasHold(object):
                 
         return [True, hand[0]]
     
+    def optimal_hand(self, hand, river):
+        temp = hand
+        strength = []
+        self.river.sort(reverse=True)
+        for x in range(len(self.river)):
+            temp.append(hand[0])
+            for y in range(len(self.river)-1):
+                if y!=x:
+                    temp.append(hand[0])
+                    for z in range(len(self.river)-2):
+                        if z!=x:
+                            temp.append(hand[0])
+                            strength.append(self.hand_value(temp))
+        strongest = strength[0]
+        for combo in strength:
+            if strongest[0] > combo[0]:
+                strongest = combo
+            elif strongest[0] ==  combo[0]:
+                if strongest[1] < combo[1]:
+                    strongest = combo
+        return strongest
 
 
         
-            
+
+
+
+
 
 
 #notes: shuffling/reshuffling takes all the cards from the pile and puts them back into the main deck
