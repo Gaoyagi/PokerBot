@@ -76,5 +76,53 @@ class TestTexasHold:
         assert game.is_flush(["S", "H", "C", "D", "S"]) == False
         assert game.is_flush(["S", "S", "S", "S", "S"]) == True
 
-    
+    def test_is_straight(self):
+        game = TexasHold()
+        test1 = game.is_straight([14, 13, 12, 11, 10])
+        assert test1[0] == True
+        assert test1[1] == 14
+        test1 = game.is_straight([10, 9, 4, 3, 2])
+        assert test1[0] == False
+        assert test1[1] == 10
 
+    def test_num_of_a_kind(self):
+        game = TexasHold()
+        test1 = game.num_of_a_kind([14, 13, 12, 11, 10])    #high card only
+        test2 = game.num_of_a_kind([14, 14, 14, 14, 10])    #4 of a kind
+        test3 = game.num_of_a_kind([14, 14, 14, 11, 10])    #triples
+        test4 = game.num_of_a_kind([14, 14, 10, 10, 10])    #full house
+        test5 = game.num_of_a_kind([14, 14, 12, 11, 10])    #pair
+        test6 = game.num_of_a_kind([14, 14, 12, 12, 10])    #2 pair
+        
+        #high card tests
+        assert len(test1) == 1
+        assert test1[0] == 14
+
+        # 4 of a kind tests
+        assert len(test2) == 1
+        assert test2[0][0] == "quad"
+        assert test2[0][1] == 14
+
+        #triples tests
+        assert len(test3) == 1
+        assert test3[0][0] == "triple"
+        assert test3[0][1] == 14
+
+        #full house tests
+        assert len(test4) == 2
+        assert test4[0][0] == "triple"
+        assert test4[0][1] == 10
+        assert test4[1][0] == "pair"
+        assert test4[1][1] == 14
+
+        #pair tests
+        assert len(test5) == 1
+        assert test5[0][0] == "pair"
+        assert test5[0][1] == 14
+
+        #2 pair tests
+        assert len(test6) == 1
+        assert test6[0][0] == "pair"
+        assert test6[0][1] == 12
+        assert test6[1][0] == "pair"
+        assert test6[1][1] == 14

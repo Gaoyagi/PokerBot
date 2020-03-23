@@ -231,8 +231,6 @@ class TexasHold(object):
             else:
                 suits.append(card[1])       #add to the list of hand suits
             values.append(int(value))   #add to the list of hand values
-            
-        values.sort(reverse=True)    
 
     #checks if your hand is a flush
     #param: hand(list of strings of all the suits)
@@ -250,15 +248,17 @@ class TexasHold(object):
     #param: hand(list of ints of all hand values)
     #return: list that holds: bool(if a straight or not), highest value of Hand
     def is_straight(self, hand):
+        hand.sort()
         for x in range(len(hand)):
-            if hand[x+1] != hand[x]+1:
-                return [False,hand[0]]
-        return [True, hand[0]]
+            if x!=len(hand)-1 and hand[x+1] != hand[x]+1:
+                return [False, hand[len(hand)-1]]
+        return [True, hand[len(hand)-1]]
 
     #checks if your hand has any pairs, triples, or quads
     #param:hand(list of ints of all the hand values)
     #return: a list of tuples contatining if its  a quad,tiple, or a pair, and what value it is
     def num_of_a_kind(self, hand):
+        hand.sort()
         sameCard = 0
         value = []
         alreadyFound = []
@@ -267,7 +267,7 @@ class TexasHold(object):
             #avoid finding __ of a kind for the same value
             if hand[x] not in alreadyFound:
                 for y in range(len(hand)):
-                    if hand[x] == hand[y]:
+                    if y!=x and hand[x] == hand[y]:
                         sameCard+=1
                     else:
                         break
@@ -279,8 +279,10 @@ class TexasHold(object):
                 value.append(("triple", hand[x]))
             elif sameCard == 1:
                 value.append(("pair", hand[x]))
-                
-        return [True, hand[0]]
+        if len(value) == 0:
+            value.append(hand[len(hand)-1])
+
+        return value
     
     #goes through every combination to find the strongest hand for a player
     #param: hand(list of the players card codes) and River(list of the card codes in the river)
