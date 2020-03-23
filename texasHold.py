@@ -6,7 +6,7 @@ class Player(object):
         self.chips = 200        #total chips a player has
         self.user = user        #makes the "name" of the user
         self.fold = False       #bool flag for if the player has folded a round
-        self.value = ""
+        #self.value = ""
         self.bet = 0            #int counter for how much a player has bet this round
         self.strength = None    #a tuple for what the strength of your hand is
 
@@ -34,22 +34,23 @@ class TexasHold(object):
     #deals a player into this round
     #param: user(twitter user name/id string)
     #return: none
-    def deal_player(self, user):     
+    def deal_player(self, user):
         #draws cards and adds it to the players hand pile
         self.draw_to_pile(2, user)
         #adds the card codes to the players hand list
-        req = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, user)).json()
+        req = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, user))
+        req = req.json()
         for card in req["piles"][user]["cards"]:
             self.players[user].hand.append(card["code"])
-        self.players[user] = Player(user)
 
     #draws the 5 cards for the river and burns 3 cards to discard
     #param: none
     #return: none
-    def river(self):
+    def make_river(self):
         self.draw_to_pile(3, "discard")
         self.draw_to_pile(5, "river")
-        faceUp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river")).json()
+        faceUp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river"))
+        faceUp = faceUp.json()
         for card in faceUp["piles"]["river"]["cards"]:
             self.river.append(card["code"])
 
@@ -64,15 +65,17 @@ class TexasHold(object):
             if self.player[key].fold != False:
                 self.add_player()
         #make the river 
-        getRiver = self.river()
+        self.make_river()
         
         # reveal the first 3 cards
         for x in range(3):
-            self.river.append(faceUp[x])
+            print(self.river[x] + " ")
         self.bettingPhase()              #betting phase 1
-        self.river.append(faceUp[3])     #1st reveal
+        for x in range(4):
+            print(self.river[x] + " ")
         self.bettingPhase()              #2nd betting phase
-        self.river.append(faceUp[4])     #final reveal
+        for x in range(5):
+            print(self.river[x] + " ")
         strongest = Player()
         #go through each player and see which one has the best hand
         for player in self.players:
@@ -154,6 +157,7 @@ class TexasHold(object):
                 return False
             player.bet+=value
             self.pot+=value
+            player.chips-=value
             return True
         else:
             print("not a valid")
@@ -220,9 +224,15 @@ class TexasHold(object):
                 value = 13
             elif value == "A":
                 value = 14
+            #check if the value is a 10
+            if card[1] == "0":
+                value = 10
+                suits.append(card[2])       #add to the list of hand suits
+            else:
+                suits.append(card[1])       #add to the list of hand suits
             values.append(int(value))   #add to the list of hand values
-            suits.append(card[1])       #add to the lsit of hand suits
-        values.sort(revere=True)    
+            
+        values.sort(reverse=True)    
 
     #checks if your hand is a flush
     #param: hand(list of strings of all the suits)
