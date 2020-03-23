@@ -1,15 +1,14 @@
 import requests 
 
-
 class Player(object):
     def __init__(self, user=""):
-        self.hand = []
-        self.chips = 200
-        self.user = user
-        self.fold = False
+        self.hand = []          #holds the card codes for what cards are in your hands
+        self.chips = 200        #total chips a player has
+        self.user = user        #makes the "name" of the user
+        self.fold = False       #bool flag for if the player has folded a round
         self.value = ""
-        self.bet = 0
-        self.strength = None
+        self.bet = 0            #int counter for how much a player has bet this round
+        self.strength = None    #a tuple for what the strength of your hand is
 
 class TexasHold(object):
     def __init__(self):
@@ -26,23 +25,33 @@ class TexasHold(object):
     #return: none
     def draw_to_pile(self, num, pile):
         #sends API request to draw cards and converts response to json dic
-        drawn = requests.get("https://deckofcardsapi.com/api/deck/{}}/draw/?count={}".format(self.deckID), num)
+        drawn = requests.get("https://deckofcardsapi.com/api/deck/{}/draw/?count={}".format(self.deckID, num))
         drawn = drawn.json()
         #goes through the drawn cards and adds it to pile
         for card in drawn["cards"]: 
             requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/add/?cards={}".format(self.deckID, pile, card["code"]))
-
-    #function to add a player to the game, draws 2 cards for them
+        
+    #deals a player into this round
     #param: user(twitter user name/id string)
     #return: none
-    def add_player(self, user):     
-        #draws cards and adds it to the players pile (hand)
+    def deal_player(self, user):     
+        #draws cards and adds it to the players hand pile
         self.draw_to_pile(2, user)
-        #adds the card codes to the players hand
+        #adds the card codes to the players hand list
         req = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, user)).json()
         for card in req["piles"][user]["cards"]:
             self.players[user].hand.append(card["code"])
         self.players[user] = Player(user)
+
+    #draws the 5 cards for the river and burns 3 cards to discard
+    #param: none
+    #return: none
+    def river(self):
+        self.draw_to_pile(3, "discard")
+        self.draw_to_pile(5, "river")
+        faceUp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river")).json()
+        for card in faceUp["piles"]["river"]["cards"]:
+            self.river.append(card["code"])
 
     #running a round texas hold em
     #param & return: none
@@ -50,13 +59,13 @@ class TexasHold(object):
         #check of the deck has enouch cards left for a full round and if not reshuffle
         if self.deck["remaining"] < 16:
             requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(self.deckID))
-        #deals all the players in
+        #only deals all the players in if they paid the ante
         for key, _ in self.players:
-            self.add_player()
+            if self.player[key].fold != False:
+                self.add_player()
         #make the river 
-        self.river()
-        getRiver = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river")).json()
-        faceUp = river["piles"]["river"]["cards"]
+        getRiver = self.river()
+        
         # reveal the first 3 cards
         for x in range(3):
             self.river.append(faceUp[x])
