@@ -17,7 +17,8 @@ class TexasHold(object):
         self.gameID = 0       #game ID is equivalent to the tweet ID
         self.river = []       #set of face up cards for the round
         self.pot = 0          #current pot for the the round
-        self.deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1").json()    #gets API request for a new deck and converts it to json
+        self.deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")    #gets API request for a new deck 
+        self.deck = self.deck.json()    #coverts api request to json
         self.deckID = self.deck["deck_id"]      #deck ID
 
     #draws a card from a deck or a pile and adds it to another pile
@@ -34,15 +35,13 @@ class TexasHold(object):
     #function to add a player to the game, draws 2 cards for them
     #param: user(twitter user name/id string)
     #return: none
-    def add_player(self, user):
-        #creates new player and adds it to the player list
-        player = Player(user)       
+    def add_player(self, user):     
         #draws cards and adds it to the players pile (hand)
         self.draw_to_pile(2, user)
         #adds the card codes to the players hand
         req = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, user)).json()
         for card in req["piles"][user]["cards"]:
-            player.append(card["code"])
+            self.players[user].hand.append(card["code"])
         self.players[user] = Player(user)
 
     #running a round texas hold em
@@ -82,7 +81,7 @@ class TexasHold(object):
         #looping through each player and reducing their bets down to 0
         for player  in self.players:
             player.bet = 0
-
+            player.fold = False
 
     #function that handles the betting phase
     #param: none
@@ -169,12 +168,17 @@ class TexasHold(object):
         #check if its a 4 of a kind
         elif numOfAKind[0][0] == "quad":
             return (2, numOfAKind[0][1])
-        #check for full house, the high card int is only for comparing triples
+        #check for full house and 2 pair, 
         elif len(numOfAKind)>1:
+            #full house 1st check, gives bakc high card of triple
             if numOfAKind[0][0] == "pair" and numOfAKind[1][0] == "triple":
                 return (3, numOfAKind[1][1])
-            if numOfAKind[0][0] == "triple" and numOfAKind[1][0] == "pair":
+            #full house 2nd check, gives back high cardof triple
+            elif numOfAKind[0][0] == "triple" and numOfAKind[1][0] == "pair":
                 return (3, numOfAKind[0][1])
+            #check for 2 pair, gives back the high values of both pairs
+            elif numOfAKind[0][0] == "pair" and numOfAKind == "pair":
+                return (7, numOfAKind[0][1], numOfAKind[1][1])
         #check of the hand is a flush
         elif flush:
             return (4)
@@ -186,11 +190,14 @@ class TexasHold(object):
             return (6,numOfAKind[0][1])
         #check for a pair, returns an extra int for high card in case the pair's tie
         elif numOfAKind[0][0] == "pair":
-            return (7,numOfAKind[0][1], values[0])
+            return (8,numOfAKind[0][1], values[0])
         #check for high card
         else:
-            return (8, values[0])
+            return (9, values[0])
         
+    #divides a player's hand into 2 seperate lists, 1 for every suit in the hand, one for every number value
+    #param: hand(list of your hand), values(list that will hold all the numbers), suits(list that will hold every card suit)
+    #return: none
     def suits_and_values(self, hand, values, suits):
         #breaks the cards up into suits and values
         for card in hand:
@@ -260,24 +267,23 @@ class TexasHold(object):
     #param: hand(list of the players card codes) and River(list of the card codes in the river)
     #return: Tuple(contining the hand strength and the highest value card in that combo)
     def optimal_hand(self, hand, river):
-        temp = hand                     #the holder for what current hand iteration is
         strength = []                   #list of every possible hand strength
         self.river.sort(reverse=True)   #sort the river by descending order
         #loop through every hand card combination
         for x in range(len(self.river)):
-            temp.append(hand[0])                #append first card
+            hand.append(hand[0])                #append first card
             for y in range(len(self.river)-1):
                 #make sure you arent testing a card being currently used
                 if y!=x:
-                    temp.append(hand[0])        #append 2nd card
+                    hand.append(hand[0])        #append 2nd card
                     for z in range(len(self.river)-2):
                         #make sure you arent testing a card being currently used
                         if z!=x and z!=y:
-                            temp.append(hand[0])#append 3rd card
-                            strength.append(self.hand_value(temp)) #add the strength of the current hand combination
-                            del temp[len(temp)-1]                  #deletes the 3rd test card
-                del temp[len(temp)-1]   #deletes the 2nd test card
-            del temp[0]                 #deletes the 1st test card
+                            hand.append(hand[0])#append 3rd card
+                            strength.append(self.hand_value(hand))      #add the strength of the current hand combination
+                            del hand[len(hand)-1]                  #deletes the 3rd test card
+                    del hand[len(hand)-1]                          #deletes the 2nd test card
+            del hand[len(hand)-1]                                  #deletes the 1st test card
         #check to find the strongest possible combo 
         strongest = strength[0]
         for combo in strength:
@@ -290,7 +296,39 @@ class TexasHold(object):
                     strongest = combo
         return strongest
 
-
+    #function that will run multiple rounds of the game, game only ends if 
+    def game(self):
+        #creates new player and adds it to the player list
+        self.players.append(Player("player 1"))  
+        self.players.append(Player("player 2"))  
+        self.players.append(Player("player 3"))  
+        self.players.append(Player("player 4"))  
+        going = True
+        while going:
+            self.ante()
+            self.round()
+            for user, _ in self.players:
+                if self.players[user].chips == 0:
+                    del self.players[user]
+            if len(self.players<2):
+                going = False
+            
+    #deals with player's ante'ing in to enter a round
+    #param and return: none
+    def ante(self):
+        for user, _ in self.players:
+            ans = input("press 0 to put in your ante for the round, 1 to sit out of this round, and 2 to quit the game entirely")
+            if ans == 0:
+                if self.players[user].chips<10:
+                    self.pot+=self.players[user].chips
+                    self.players[user].chips = 0    
+                else:
+                    self.pot+=10
+                    self.players[user].chip-=10
+            elif ans == 1:
+                self.playerz[user].fold = True
+            elif ans == 2:
+                del self.player[user]
         
 
 
