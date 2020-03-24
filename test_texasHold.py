@@ -23,7 +23,7 @@ class TestTexasHold:
         assert game.players[user].user == user
         assert game.players[user].fold == False
         assert game.players[user].bet == 0
-        assert game.players[user].strength == None
+        assert game.players[user].strength == -1
     
     def test_river(self):
         game = TexasHold()
@@ -201,25 +201,25 @@ class TestTexasHold:
         river1 = ["2C", "0C", "5H", "2D", "6H"]
         str1 = game.optimal_hand(hand1, river1)
 
-        # #triples
-        # hand2 = ["KC", "5H"]
-        # river2 = ["4H", "3C", "8H", "5D", "5S"]
-        # str2 = game.optimal_hand(hand2, river2)
+        #triples
+        hand2 = ["KC", "5H"]
+        river2 = ["4H", "3C", "8H", "5D", "5S"]
+        str2 = game.optimal_hand(hand2, river2)
 
-        # #2 pair 
-        # hand3 = ["5C", "5H"]
-        # river3 = ["4H", "3C", "8H", "6D", "6S"]
-        # str3 = game.optimal_hand(hand3, river3)
+        #2 pair 
+        hand3 = ["5C", "5H"]
+        river3 = ["4H", "3C", "8H", "6D", "6S"]
+        str3 = game.optimal_hand(hand3, river3)
 
-        # #flush 
-        # hand4 = ["5C", "0H"]
-        # river4 = ["4H", "3H", "8H", "6H", "6S"]
-        # str4 = game.optimal_hand(hand4, river4)
+        #flush 
+        hand4 = ["5C", "0H"]
+        river4 = ["4H", "3H", "8H", "6H", "6S"]
+        str4 = game.optimal_hand(hand4, river4)
 
-        # #straight 
-        # hand5 = ["5C", "5H"]
-        # river5 = ["4H", "3C", "8H", "6D", "7S"]
-        # str5 = game.optimal_hand(hand5, river5)
+        #straight 
+        hand5 = ["5C", "5H"]
+        river5 = ["4H", "3C", "8H", "6D", "7S"]
+        str5 = game.optimal_hand(hand5, river5)
 
         #pair test
         assert len(str1) == 4
@@ -227,23 +227,23 @@ class TestTexasHold:
         assert str1[1] == 2
         assert str1[2] == 12
 
-        # #triples test
-        # assert len(str1) == 3
-        # assert str2[0] == 6
-        # assert str2[1] == 5
+        #triples test
+        assert len(str2) == 3
+        assert str2[0] == 6
+        assert str2[1] == 5
 
-        # #2 pair test
-        # assert len(str3) == 4
-        # assert str3[0] == 7
-        # assert str3[1] == 5
-        # assert str3[2] == 6
+        #2 pair test
+        assert len(str3) == 4
+        assert str3[0] == 7
+        assert str3[1] == 5
+        assert str3[2] == 6
 
-        # #flush
-        # assert len(str4) == 2
-        # assert str4[0] == 4
+        #flush
+        assert len(str4) == 2
+        assert str4[0] == 4
 
-        # #straight
-        # assert len(str5) == 3
-        # assert str5[0] == 5
-        # assert str5[1] == 7
+        #straight
+        assert len(str5) == 3
+        assert str5[0] == 5
+        assert str5[1] == 8
 

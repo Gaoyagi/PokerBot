@@ -300,6 +300,7 @@ class TexasHold(object):
     def optimal_hand(self, hand, river):
         strengths = []                  #list of every possible hand strength
         available = hand+river          #cards that available to make a hand out of
+        print(available)
         possible = []                   #current iteration of the possible 5 card combination
         #loop through every 5 hand card combination
         for a in range(len(available)):
@@ -318,13 +319,18 @@ class TexasHold(object):
                                         #make sure you arent testing a card being currently used
                                         if e!=d and e!=c and e!=b and e!=a:
                                             possible.append(available[e])       #append 5th card
+                                            #print("Possible", possible)
                                             strength = self.hand_value(possible)    #calculate current hand strength
                                             strengths.append(strength)       #add the strength to strengths list
-            possible.clear()    #clears the current possible hand
-        print(strengths)
+                                            del possible[len(possible)-1]
+                                    del possible[len(possible)-1]
+                            del possible[len(possible)-1]
+                    del possible[len(possible)-1]
+            del possible[len(possible)-1]
         #check to find the strongest possible combo 
         strongest = strengths[0]
         for combo in strengths:
+            print(combo)
             #check if the ranking of the strength is lower  (lower is stronger)
             if strongest[0] > combo[0]:
                 strongest = combo
