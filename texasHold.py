@@ -89,15 +89,10 @@ class TexasHold(object):
         #ending the round and  declaring the winner,giving them the chips from the pot
         print(f"the winner of this round is {strongest.user}, wining {self.pot} chips!")
         strongest.player.chips+=self.pot
-        self.pot = 0
-        #looping through each player and reducing their bets down to 0
-        for player  in self.players:
-            player.bet = 0
-            player.fold = False
-
+        self.pot = 0 
+    
     #function that handles the betting phase
-    #param: none
-    #return: none
+    #param & return: none
     def betting_phase(self):
         done = False
         currBet = 0     #the current betting amoutn you have to meet for this round
@@ -169,44 +164,46 @@ class TexasHold(object):
     def hand_value(self, hand):
         suits = []  #list to hold all card's suit
         values = []  #list to hold all card's values
-        self. suits_and_values(hand, values, suits)
+        self.suits_and_values(hand, values, suits)
 
-        flush = is_flush(suits)
-        straight = is_straight(values)
-        numOfAKind = num_of_a_kind(values)
+        flush = self.is_flush(suits)
+        straight = self.is_straight(values)
+        numOfAKind = self.num_of_a_kind(values)
 
         #check if its a straight flush
         if flush and straight[0]:
-            return (1,straight[1])
+            return (1, straight[1], hand)
         #check if its a 4 of a kind
         elif numOfAKind[0][0] == "quad":
-            return (2, numOfAKind[0][1])
+            return (2, numOfAKind[0][1], hand)
         #check for full house and 2 pair, 
         elif len(numOfAKind)>1:
             #full house 1st check, gives bakc high card of triple
             if numOfAKind[0][0] == "pair" and numOfAKind[1][0] == "triple":
-                return (3, numOfAKind[1][1])
+                return (3, numOfAKind[1][1], hand)
             #full house 2nd check, gives back high cardof triple
             elif numOfAKind[0][0] == "triple" and numOfAKind[1][0] == "pair":
-                return (3, numOfAKind[0][1])
+                return (3, numOfAKind[0][1], hand)
             #check for 2 pair, gives back the high values of both pairs
-            elif numOfAKind[0][0] == "pair" and numOfAKind == "pair":
-                return (7, numOfAKind[0][1], numOfAKind[1][1])
+            elif numOfAKind[0][0] == "pair" and numOfAKind[1][0] == "pair":
+                return (7, numOfAKind[0][1], numOfAKind[1][1], hand)
         #check of the hand is a flush
         elif flush:
-            return (4)
+            return (4, hand)
         #check for straight
         elif straight[0]:
-            return (5,straight[1])
+            return (5,straight[1], hand)
         #check for triples
         elif numOfAKind[0][0] == "triple":
-            return (6,numOfAKind[0][1])
+            return (6,numOfAKind[0][1], hand)
         #check for a pair, returns an extra int for high card in case the pair's tie
         elif numOfAKind[0][0] == "pair":
-            return (8,numOfAKind[0][1], values[0])
+            values.sort(reverse=True)
+            return (8, numOfAKind[0][1], values[0], hand)
         #check for high card
         else:
-            return (9, values[0])
+            values.sort(reverse=True)
+            return (9, values[0], hand)
         
     #divides a player's hand into 2 seperate lists, 1 for every suit in the hand, one for every number value
     #param: hand(list of your hand), values(list that will hold all the numbers), suits(list that will hold every card suit)
@@ -258,20 +255,18 @@ class TexasHold(object):
     #param:hand(list of ints of all the hand values)
     #return: a list of tuples contatining if its  a quad,tiple, or a pair, and what value it is
     def num_of_a_kind(self, hand):
-        hand.sort()
-        sameCard = 0
         value = []
         alreadyFound = []
+        hand.sort()
         #go through every value in the hand to find duplicates
         for x in range(len(hand)):
+            sameCard = 0
             #avoid finding __ of a kind for the same value
             if hand[x] not in alreadyFound:
                 for y in range(len(hand)):
                     if y!=x and hand[x] == hand[y]:
                         sameCard+=1
-                    else:
-                        break
-            alreadyFound.append(hand[x])
+            alreadyFound.append(hand[x])    #add that number to list of numbers you dont need to use anymore
             if sameCard == 3:
                 value.append(("quad", hand[x]))
                 return value
@@ -280,7 +275,7 @@ class TexasHold(object):
             elif sameCard == 1:
                 value.append(("pair", hand[x]))
         if len(value) == 0:
-            value.append(hand[len(hand)-1])
+            value.append(("high card", hand[len(hand)-1]))
 
         return value
     
@@ -289,19 +284,18 @@ class TexasHold(object):
     #return: Tuple(contining the hand strength and the highest value card in that combo)
     def optimal_hand(self, hand, river):
         strength = []                   #list of every possible hand strength
-        self.river.sort(reverse=True)   #sort the river by descending order
         #loop through every hand card combination
-        for x in range(len(self.river)):
-            hand.append(hand[0])                #append first card
-            for y in range(len(self.river)-1):
+        for x in range(len(river)):
+            hand.append(river[x])                    #append first card
+            for y in range(len(river)):
                 #make sure you arent testing a card being currently used
                 if y!=x:
-                    hand.append(hand[0])        #append 2nd card
-                    for z in range(len(self.river)-2):
+                    hand.append(river[y])            #append 2nd card
+                    for z in range(len(river)):
                         #make sure you arent testing a card being currently used
                         if z!=x and z!=y:
-                            hand.append(hand[0])#append 3rd card
-                            strength.append(self.hand_value(hand))      #add the strength of the current hand combination
+                            hand.append(river[z])    #append 3rd card
+                            strength.append(self.hand_value(hand))     #add the strength of the current hand combination
                             del hand[len(hand)-1]                  #deletes the 3rd test card
                     del hand[len(hand)-1]                          #deletes the 2nd test card
             del hand[len(hand)-1]                                  #deletes the 1st test card
@@ -316,6 +310,22 @@ class TexasHold(object):
                 if strongest[1] < combo[1]:
                     strongest = combo
         return strongest
+
+    #function to reset values and clear hands after a round ends
+    def round_reset(self):
+        #looping through each player to: clear his hand, reset the fold bool, reset player bet for the round
+        for player in self.players:
+            player.bet = 0
+            player.fold = False
+            toEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/draw/?count=2".format(self.deckID, player.user))
+            toEmpty = toEmpty.json()
+            for card in toEmpty["piles"][player.user]["cards"]:
+                requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/add/?cards={}".format(self.deckID, card["code"]))
+        #clear the river
+        riverEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/river/draw/?count=2".format(self.deckID))
+        riverEmpty = riverEmpty.json()
+        for card in riverEmpty["piles"]["river"]["cards"]:
+            requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/add/?cards={}".format(self.deckID, card["code"]))
 
     #function that will run multiple rounds of the game, game only ends if 
     def game(self):
