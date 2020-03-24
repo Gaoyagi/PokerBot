@@ -137,27 +137,27 @@ class TestTexasHold:
 
     def test_hand_value(self):
         game = TexasHold()
-        test1 = game.hand_value(["AS", "KS", "QS", "JS", "10S"])    #straight flush
+        test1 = game.hand_value(["10S", "9S", "8S", "7S", "6S"])    #straight flush
         test2 = game.hand_value(["AS", "AH", "AD", "AC", "10S"])    #4 of a kind
         test3 = game.hand_value(["2S", "2C", "2D", "10S", "10D"])   #full house version 2
         test4 = game.hand_value(["AS", "4S", "2S", "2D", "4D"])     #2 pair
         test5 = game.hand_value(["AS", "2S", "6S", "8S", "9S"])     #flush
         test6 = game.hand_value(["4D", "3C", "5C", "6H", "7S"])     #straight 
         test7 = game.hand_value(["9D", "7S", "7S", "7S", "8C"])     #triples
-        test8 = game.hand_value(["9H", "6S", "6H", "2C", "10S"])    #pair
+        test8 = game.hand_value(["9H", "6S", "2C", "10S", "6H"])    #pair
         test9 = game.hand_value(["10S", "4H", "2C", "JS", "QD"])    #high card
 
         #tests straight flush
         assert test1[0] == 1
-        assert test1[1] == 14
-        assert test1[2] == ["AS", "KS", "QS", "JS", "10S"]
+        assert test1[1] == 10
+        assert test1[2] == ["10S", "9S", "8S", "7S", "6S"]
 
         #tests for 4 of a kind
         assert test2[0] == 2
         assert test2[1] == 14
         assert test2[2] == ["AS", "AH", "AD", "AC", "10S"]
 
-        #tests for full house v
+        #tests for full house 
         assert test3[0] == 3
         assert test3[1] == 2
         assert test3[2] == ["2S", "2C", "2D", "10S", "10D"]
@@ -186,7 +186,7 @@ class TestTexasHold:
         assert test8[0] == 8
         assert test8[1] == 6
         assert test8[2] == 10
-        assert test8[3] == ["9H", "6S", "6H", "2C", "10S"]
+        assert test8[3] == ["9H", "6S", "2C", "10S", "6H"]
 
         #tests high card
         assert test9[0] == 9
@@ -195,22 +195,54 @@ class TestTexasHold:
 
     def test_optimal_hand(self):
         game = TexasHold()
-        #pair test
+        #pair
         hand1 = ["3S", "QC"]
         river1 = ["2C", "10C", "5H", "2D", "6H"]
         str1 = game.optimal_hand(hand1, river1)
 
-        #triples test
-        hand2 = ["KC", "5H"]
-        river2 = ["4H", "3C", "8H", "5D", "5S"]
-        str2 = game.optimal_hand(hand1, river1)
+        # #triples
+        # hand2 = ["KC", "5H"]
+        # river2 = ["4H", "3C", "8H", "5D", "5S"]
+        # str2 = game.optimal_hand(hand2, river2)
 
-        #2 pair test
-        hand2 = ["5C", "5H"]
-        river2 = ["4H", "3C", "8H", "6D", "6S"]
-        str2 = game.optimal_hand(hand1, river1)
+        # #2 pair 
+        # hand3 = ["5C", "5H"]
+        # river3 = ["4H", "3C", "8H", "6D", "6S"]
+        # str3 = game.optimal_hand(hand3, river3)
 
+        # #flush 
+        # hand4 = ["5C", "10H"]
+        # river4 = ["4H", "3H", "8H", "6H", "6S"]
+        # str4 = game.optimal_hand(hand4, river4)
+
+        # #straight 
+        # hand5 = ["5C", "5H"]
+        # river5 = ["4H", "3C", "8H", "6D", "7S"]
+        # str5 = game.optimal_hand(hand5, river5)
+
+        #pair test
+        assert len(str1) == 4
         assert str1[0] == 8
         assert str1[1] == 2
         assert str1[2] == 12
+
+        # #triples test
+        # assert len(str1) == 3
+        # assert str2[0] == 6
+        # assert str2[1] == 5
+
+        # #2 pair test
+        # assert len(str3) == 4
+        # assert str3[0] == 7
+        # assert str3[1] == 5
+        # assert str3[2] == 6
+
+        # #flush
+        # assert len(str4) == 2
+        # assert str4[0] == 4
+
+        # #straight
+        # assert len(str5) == 3
+        # assert str5[0] == 5
+        # assert str5[1] == 7
 

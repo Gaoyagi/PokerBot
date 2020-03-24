@@ -6,7 +6,6 @@ class Player(object):
         self.chips = 200        #total chips a player has
         self.user = user        #makes the "name" of the user
         self.fold = False       #bool flag for if the player has folded a round
-        #self.value = ""
         self.bet = 0            #int counter for how much a player has bet this round
         self.strength = None    #a tuple for what the strength of your hand is
 
@@ -16,6 +15,7 @@ class TexasHold(object):
         self.gameID = 0       #game ID is equivalent to the tweet ID
         self.river = []       #set of face up cards for the round
         self.pot = 0          #current pot for the the round
+        self.currBet = 0      #the amount each player should have in the pot
         self.deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")    #gets API request for a new deck 
         self.deck = self.deck.json()    #coverts api request to json
         self.deckID = self.deck["deck_id"]      #deck ID
@@ -60,26 +60,30 @@ class TexasHold(object):
         #check of the deck has enouch cards left for a full round and if not reshuffle
         if self.deck["remaining"] < 16:
             requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(self.deckID))
+        active = []
         #only deals all the players in if they paid the ante
-        for key, _ in self.players:
-            if self.player[key].fold != False:
-                self.add_player()
+        for key in self.players:
+            if self.players[key].fold == False:
+                self.deal_player(key)
+                print(f"{key}'s hand is: {self.players[key].hand}")
+                active.append(key)
+
+        self.betting_phase(active)              #betting phase 1
         #make the river 
         self.make_river()
-        
         # reveal the first 3 cards
         for x in range(3):
             print(self.river[x] + " ")
-        self.bettingPhase()              #betting phase 1
+        self.betting_phase(active)              #betting phase 2
         for x in range(4):
             print(self.river[x] + " ")
-        self.bettingPhase()              #2nd betting phase
+        self.betting_phase(active)              #betting phase 3 (last)
         for x in range(5):
             print(self.river[x] + " ")
         strongest = Player()
         #go through each player and see which one has the best hand
         for player in self.players:
-            strength = optimal_hand(player.hand, self.river)
+            strength = self.optimal_hand(player.hand, self.river)
             if strength[0] < strongest.strength[0]:
                 strongest = player
             #if the hand strength ties, check which one has the highest card
@@ -93,29 +97,30 @@ class TexasHold(object):
     
     #function that handles the betting phase
     #param & return: none
-    def betting_phase(self):
+    def betting_phase(self, activePlayers):
         done = False
-        currBet = 0     #the current betting amoutn you have to meet for this round
-        timesBet = 0    #variable to make sure every player has been allwoed to try betting at least once
-        #keep betting until alll is done
+        #keep betting until all is done
         while not done:
-            #loop through ech player to see thier bets
             done = True
-            #go through each player and to get their bets
-            for player in self.players:
-                #players can only bet if they haven't folded yet
-                if not player.fold and player.chips!=0:
+            #go through each player that hasnt folded and to get their bets
+            print(activePlayers)
+            for user in activePlayers:
+                #players can only bet if they have chips (if a player goes all in they get skipped)
+                if self.players[user].chips!=0:
                     #ask for user input for bet, only will take num >= -1
                     valid = False
                     #player inputs bet and then program checks if bet is above the bet as a whole
                     while not valid:
-                        value = input("enter your bet (0 to check or call, -1 to fold): ")
-                        valid = self.betting(int(value), player, currBet)      
-                    if player.bet>currBet and timesBet>3:
-                        currBet = player.bet
+                        print(f"\ncurrent bet per person: {self.currBet}")
+                        print(f"{user} current chips: {self.players[user].chips}")
+                        print(f"{user}'s current bet: {self.players[user].bet}")
+                        value = input(f"({user}): enter your bet (0 to check or call, -1 to fold, other to raise): ")
+                        valid = self.betting(int(value), self.players[user], self.currBet)     
+                    #if everyone has gotten a chance to bet at least once and there is a raise, then continue the betting loop
+                    if self.players[user].bet>self.currBet:
                         done = False
-                timesBet+=1
-
+                    self.currBet = self.players[user].bet
+    
     #checks if a player bet is a call, raise, check, or a fold. then changes the pot and player's bet accordingly
     #param: user string whos betting, amount number that theyre betting
     #return: Bool for if the bet was valid or not
@@ -145,11 +150,13 @@ class TexasHold(object):
             #if the player raises more than they have then return false
             if value>player.chips:
                 print("you don't have enough for that")
+                print(f"you only have {player.chips}")
                 return False
             #if the bet is either too low or it only calls the bet then return false
             if player.bet+value <= currBet:
-                print("invalid, bet too low")
+                print("invalid raise, bet too low")
                 return False
+            #player has to raise so his bet will be greater than the current bet
             player.bet+=value
             self.pot+=value
             player.chips-=value
@@ -178,7 +185,7 @@ class TexasHold(object):
             return (2, numOfAKind[0][1], hand)
         #check for full house and 2 pair, 
         elif len(numOfAKind)>1:
-            #full house 1st check, gives bakc high card of triple
+            #full house 1st check, gives back high card of triple
             if numOfAKind[0][0] == "pair" and numOfAKind[1][0] == "triple":
                 return (3, numOfAKind[1][1], hand)
             #full house 2nd check, gives back high cardof triple
@@ -192,18 +199,17 @@ class TexasHold(object):
             return (4, hand)
         #check for straight
         elif straight[0]:
-            return (5,straight[1], hand)
+            return (5, straight[1], hand)
         #check for triples
         elif numOfAKind[0][0] == "triple":
-            return (6,numOfAKind[0][1], hand)
+            return (6, numOfAKind[0][1], hand)
         #check for a pair, returns an extra int for high card in case the pair's tie
         elif numOfAKind[0][0] == "pair":
             values.sort(reverse=True)
             return (8, numOfAKind[0][1], values[0], hand)
         #check for high card
-        else:
-            values.sort(reverse=True)
-            return (9, values[0], hand)
+        values.sort(reverse=True)
+        return (9, values[0], hand)
         
     #divides a player's hand into 2 seperate lists, 1 for every suit in the hand, one for every number value
     #param: hand(list of your hand), values(list that will hold all the numbers), suits(list that will hold every card suit)
@@ -253,7 +259,7 @@ class TexasHold(object):
 
     #checks if your hand has any pairs, triples, or quads
     #param:hand(list of ints of all the hand values)
-    #return: a list of tuples contatining if its  a quad,tiple, or a pair, and what value it is
+    #return: a list(value) of tuples contatining if its a quad,tiple, or a pair, and what value it is
     def num_of_a_kind(self, hand):
         value = []
         alreadyFound = []
@@ -283,25 +289,33 @@ class TexasHold(object):
     #param: hand(list of the players card codes) and River(list of the card codes in the river)
     #return: Tuple(contining the hand strength and the highest value card in that combo)
     def optimal_hand(self, hand, river):
-        strength = []                   #list of every possible hand strength
-        #loop through every hand card combination
-        for x in range(len(river)):
-            hand.append(river[x])                    #append first card
-            for y in range(len(river)):
-                #make sure you arent testing a card being currently used
-                if y!=x:
-                    hand.append(river[y])            #append 2nd card
-                    for z in range(len(river)):
-                        #make sure you arent testing a card being currently used
-                        if z!=x and z!=y:
-                            hand.append(river[z])    #append 3rd card
-                            strength.append(self.hand_value(hand))     #add the strength of the current hand combination
-                            del hand[len(hand)-1]                  #deletes the 3rd test card
-                    del hand[len(hand)-1]                          #deletes the 2nd test card
-            del hand[len(hand)-1]                                  #deletes the 1st test card
+        strengths = []                  #list of every possible hand strength
+        available = hand+river          #cards that available to make a hand out of
+        possible = []                   #current iteration of the possible 5 card combination
+        #loop through every 5 hand card combination
+        for a in range(len(available)):
+            possible.append(available[a])                                      #append 1st card
+            for b in range(len(available)):
+                if b!=a:
+                    possible.append(available[b])                              #append 2nd card
+                    for c in range(len(river)):
+                        if c!=b and c!=a:
+                            possible.append(available[c])                       #append 3rd card 
+                            for d in range(len(river)):
+                                #make sure you arent testing a card being currently used
+                                if d!=c and d!=b and d!=a:
+                                    possible.append(available[d])               #append 4th card
+                                    for e in range(len(river)):
+                                        #make sure you arent testing a card being currently used
+                                        if e!=d and e!=c and e!=b and e!=a:
+                                            possible.append(available[e])       #append 5th card
+                                            strength = self.hand_value(possible)    #calculate current hand strength
+                                            strengths.append(strength)       #add the strength to strengths list
+            possible.clear()    #clears the current possible hand
+        print(strengths)
         #check to find the strongest possible combo 
-        strongest = strength[0]
-        for combo in strength:
+        strongest = strengths[0]
+        for combo in strengths:
             #check if the ranking of the strength is lower  (lower is stronger)
             if strongest[0] > combo[0]:
                 strongest = combo
@@ -317,28 +331,30 @@ class TexasHold(object):
         for player in self.players:
             player.bet = 0
             player.fold = False
+            #moves cards from player hands pile to the discard pile
             toEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/draw/?count=2".format(self.deckID, player.user))
             toEmpty = toEmpty.json()
             for card in toEmpty["piles"][player.user]["cards"]:
                 requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/add/?cards={}".format(self.deckID, card["code"]))
+            player.hand.clear()
         #clear the river
         riverEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/river/draw/?count=2".format(self.deckID))
         riverEmpty = riverEmpty.json()
         for card in riverEmpty["piles"]["river"]["cards"]:
             requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/add/?cards={}".format(self.deckID, card["code"]))
+        self.river.clear()
 
     #function that will run multiple rounds of the game, game only ends if 
     def game(self):
-        #creates new player and adds it to the player list
-        self.players.append(Player("player 1"))  
-        self.players.append(Player("player 2"))  
-        self.players.append(Player("player 3"))  
-        self.players.append(Player("player 4"))  
         going = True
+        self.players["player1"] = Player("player1")
+        self.players["player2"] = Player("player2")
+        self.players["player3"] = Player("player3")
+        self.players["player4"] = Player("player4")  
         while going:
             self.ante()
             self.round()
-            for user, _ in self.players:
+            for user in self.players:
                 if self.players[user].chips == 0:
                     del self.players[user]
             if len(self.players<2):
@@ -347,19 +363,29 @@ class TexasHold(object):
     #deals with player's ante'ing in to enter a round
     #param and return: none
     def ante(self):
-        for user, _ in self.players:
-            ans = input("press 0 to put in your ante for the round, 1 to sit out of this round, and 2 to quit the game entirely")
-            if ans == 0:
-                if self.players[user].chips<10:
-                    self.pot+=self.players[user].chips
-                    self.players[user].chips = 0    
+        remove = []
+        for user in self.players:
+            invalid = True
+            while invalid:
+                ans = input(f"({user}): press 0 to put in your ante (10 chips) for the round, 1 to sit out of this round, and 2 to quit the game entirely: ")
+                invalid = False
+                ans = int(ans)
+                if ans == 0:
+                    if self.players[user].chips<10:
+                        self.pot+=self.players[user].chips
+                        self.players[user].chips = 0    
+                    else:
+                        self.pot+=10
+                        self.players[user].chips-=10
+                elif ans == 1:
+                    self.players[user].fold = True
+                elif ans == 2:
+                    remove.append(user)
                 else:
-                    self.pot+=10
-                    self.players[user].chip-=10
-            elif ans == 1:
-                self.playerz[user].fold = True
-            elif ans == 2:
-                del self.player[user]
+                    print("not a valid option")
+                    invalid = True
+        for user in remove:
+            del self.players[user]
         
 
 
@@ -371,14 +397,12 @@ class TexasHold(object):
 #       you can draw specific cards  isntead of jsut a general number
 #       you cant add cards directly to the deck
 
-# deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")    #makes a new deck for this game
-# deck = deck.json()
-# deckID  = deck["deck_id"]
-# drawn = requests.get("https://deckofcardsapi.com/api/deck/{}/draw/?cards=AS".format(deckID))
-# drawn = drawn.json()        #requests api to draw 2 cards ad then convert that response to json
-# temp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/sample/add/?cards=AS".format(deckID))
-# print(temp.text)
-# temp1 = requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(deckID))
+
+
+if __name__ == '__main__':
+    game = TexasHold()
+    # for _ in range(4):
+    #     name = ("imput player name: ")
+    #     game.players[name] = Player(name)  
+    game.game()
     
-# print(temp1.text)
-# # print(temp) 
