@@ -18,6 +18,7 @@ class TestTexasHold:
         game.deal_player(user)
         assert game.players[user] != None
         assert len(game.players[user].hand) == 2
+        print(game.players[user].hand)
         assert game.players[user].chips == 200
         assert game.players[user].user == user
         assert game.players[user].fold == False
@@ -64,7 +65,7 @@ class TestTexasHold:
         
     def test_suits_and_values(self):
         game = TexasHold()
-        hand =["AS", "KH", "QC", "JD", "10S"]
+        hand =["AS", "KH", "QC", "JD", "0S"]
         suits = []
         values = []
         game.suits_and_values(hand, values, suits)
@@ -137,30 +138,30 @@ class TestTexasHold:
 
     def test_hand_value(self):
         game = TexasHold()
-        test1 = game.hand_value(["10S", "9S", "8S", "7S", "6S"])    #straight flush
-        test2 = game.hand_value(["AS", "AH", "AD", "AC", "10S"])    #4 of a kind
-        test3 = game.hand_value(["2S", "2C", "2D", "10S", "10D"])   #full house version 2
+        test1 = game.hand_value(["0S", "9S", "8S", "7S", "6S"])    #straight flush
+        test2 = game.hand_value(["AS", "AH", "AD", "AC", "0S"])    #4 of a kind
+        test3 = game.hand_value(["2S", "2C", "2D", "0S", "0D"])   #full house version 2
         test4 = game.hand_value(["AS", "4S", "2S", "2D", "4D"])     #2 pair
         test5 = game.hand_value(["AS", "2S", "6S", "8S", "9S"])     #flush
         test6 = game.hand_value(["4D", "3C", "5C", "6H", "7S"])     #straight 
         test7 = game.hand_value(["9D", "7S", "7S", "7S", "8C"])     #triples
-        test8 = game.hand_value(["9H", "6S", "2C", "10S", "6H"])    #pair
-        test9 = game.hand_value(["10S", "4H", "2C", "JS", "QD"])    #high card
+        test8 = game.hand_value(["9H", "6S", "2C", "0S", "6H"])    #pair
+        test9 = game.hand_value(["0S", "4H", "2C", "JS", "QD"])    #high card
 
         #tests straight flush
         assert test1[0] == 1
         assert test1[1] == 10
-        assert test1[2] == ["10S", "9S", "8S", "7S", "6S"]
+        assert test1[2] == ["0S", "9S", "8S", "7S", "6S"]
 
         #tests for 4 of a kind
         assert test2[0] == 2
         assert test2[1] == 14
-        assert test2[2] == ["AS", "AH", "AD", "AC", "10S"]
+        assert test2[2] == ["AS", "AH", "AD", "AC", "0S"]
 
         #tests for full house 
         assert test3[0] == 3
         assert test3[1] == 2
-        assert test3[2] == ["2S", "2C", "2D", "10S", "10D"]
+        assert test3[2] == ["2S", "2C", "2D", "0S", "0D"]
 
         #tests for 2 pair
         assert test4[0] == 7
@@ -186,18 +187,18 @@ class TestTexasHold:
         assert test8[0] == 8
         assert test8[1] == 6
         assert test8[2] == 10
-        assert test8[3] == ["9H", "6S", "2C", "10S", "6H"]
+        assert test8[3] == ["9H", "6S", "2C", "0S", "6H"]
 
         #tests high card
         assert test9[0] == 9
         assert test9[1] == 12
-        assert test9[2] == ["10S", "4H", "2C", "JS", "QD"]
+        assert test9[2] == ["0S", "4H", "2C", "JS", "QD"]
 
     def test_optimal_hand(self):
         game = TexasHold()
         #pair
         hand1 = ["3S", "QC"]
-        river1 = ["2C", "10C", "5H", "2D", "6H"]
+        river1 = ["2C", "0C", "5H", "2D", "6H"]
         str1 = game.optimal_hand(hand1, river1)
 
         # #triples
@@ -211,7 +212,7 @@ class TestTexasHold:
         # str3 = game.optimal_hand(hand3, river3)
 
         # #flush 
-        # hand4 = ["5C", "10H"]
+        # hand4 = ["5C", "0H"]
         # river4 = ["4H", "3H", "8H", "6H", "6S"]
         # str4 = game.optimal_hand(hand4, river4)
 

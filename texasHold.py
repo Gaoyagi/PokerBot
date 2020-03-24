@@ -7,7 +7,7 @@ class Player(object):
         self.user = user        #makes the "name" of the user
         self.fold = False       #bool flag for if the player has folded a round
         self.bet = 0            #int counter for how much a player has bet this round
-        self.strength = None    #a tuple for what the strength of your hand is
+        self.strength = (-1)      #a tuple for what the strength of your hand is
 
 class TexasHold(object):
     def __init__(self):
@@ -42,6 +42,7 @@ class TexasHold(object):
         req = req.json()
         for card in req["piles"][user]["cards"]:
             self.players[user].hand.append(card["code"])
+        print(self.players[user].hand)
 
     #draws the 5 cards for the river and burns 3 cards to discard
     #param: none
@@ -71,18 +72,23 @@ class TexasHold(object):
         self.betting_phase(active)              #betting phase 1
         #make the river 
         self.make_river()
+        tempRiver = []
         # reveal the first 3 cards
         for x in range(3):
-            print(self.river[x] + " ")
+            tempRiver.append(self.river[x])
+        print("The Flop: ")
+        print(tempRiver)
         self.betting_phase(active)              #betting phase 2
-        for x in range(4):
-            print(self.river[x] + " ")
+        tempRiver.append(self.river[3])
+        print("The Turn: ")
+        print(tempRiver)
         self.betting_phase(active)              #betting phase 3 (last)
-        for x in range(5):
-            print(self.river[x] + " ")
-        strongest = Player()
+        tempRiver.append(self.river[4])
+        print("The River: ")
+        print(tempRiver)
         #go through each player and see which one has the best hand
-        for player in self.players:
+        strongest = Player("temp")  #place holder for strongest player
+        for player in self.players.values():
             strength = self.optimal_hand(player.hand, self.river)
             if strength[0] < strongest.strength[0]:
                 strongest = player
@@ -90,6 +96,10 @@ class TexasHold(object):
             elif strength[0] == strongest[0]:
                 if strength[1]>strongest[1]:
                     strongest = player
+                #if the first hgih card check ties then check the other high card, this case only applies to 2 pairs and pairs
+                elif strength[1] == strongest[1]:
+                    if strength[2]>strongest[2]:
+                        strongest = player
         #ending the round and  declaring the winner,giving them the chips from the pot
         print(f"the winner of this round is {strongest.user}, wining {self.pot} chips!")
         strongest.player.chips+=self.pot
@@ -228,11 +238,10 @@ class TexasHold(object):
             elif value == "A":
                 value = 14
             #check if the value is a 10
-            if card[1] == "0":
+            elif value == "0":
                 value = 10
-                suits.append(card[2])       #add to the list of hand suits
-            else:
-                suits.append(card[1])       #add to the list of hand suits
+
+            suits.append(card[1])       #add to the list of hand suits
             values.append(int(value))   #add to the list of hand values
 
     #checks if your hand is a flush
@@ -327,6 +336,7 @@ class TexasHold(object):
 
     #function to reset values and clear hands after a round ends
     def round_reset(self):
+        self.currBet = 0
         #looping through each player to: clear his hand, reset the fold bool, reset player bet for the round
         for player in self.players:
             player.bet = 0
@@ -354,11 +364,14 @@ class TexasHold(object):
         while going:
             self.ante()
             self.round()
+            #find players with 0 chips and remove them from the game
             for user in self.players:
                 if self.players[user].chips == 0:
                     del self.players[user]
+            #if the amount of players is less than 2 then the game's over
             if len(self.players<2):
                 going = False
+            self.round_reset()
             
     #deals with player's ante'ing in to enter a round
     #param and return: none
