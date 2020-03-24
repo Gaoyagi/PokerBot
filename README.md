@@ -38,4 +38,4 @@ George Aoyagi
 - be able to last more than 1 round [x]
 
 ### texasHold_test.py
-- write tests for every function in texasHold.py [0/13]
+- write tests for every function in texasHold.py [10/10]

@@ -23,7 +23,7 @@ class TestTexasHold:
         assert game.players[user].user == user
         assert game.players[user].fold == False
         assert game.players[user].bet == 0
-        assert game.players[user].strength == -1
+        assert game.players[user].strength[0] == 10
     
     def test_river(self):
         game = TexasHold()

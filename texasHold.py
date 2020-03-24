@@ -7,7 +7,7 @@ class Player(object):
         self.user = user        #makes the "name" of the user
         self.fold = False       #bool flag for if the player has folded a round
         self.bet = 0            #int counter for how much a player has bet this round
-        self.strength = (-1)      #a tuple for what the strength of your hand is
+        self.strength = (10,)      #a tuple for what the strength of your hand is
 
 class TexasHold(object):
     def __init__(self):
@@ -42,7 +42,7 @@ class TexasHold(object):
         req = req.json()
         for card in req["piles"][user]["cards"]:
             self.players[user].hand.append(card["code"])
-        print(self.players[user].hand)
+       
 
     #draws the 5 cards for the river and burns 3 cards to discard
     #param: none
@@ -73,37 +73,26 @@ class TexasHold(object):
         #make the river 
         self.make_river()
         tempRiver = []
-        # reveal the first 3 cards
+        # reveal the first 3 cards phase
         for x in range(3):
             tempRiver.append(self.river[x])
-        print("The Flop: ")
+        print("\nThe Flop: ")
         print(tempRiver)
         self.betting_phase(active)              #betting phase 2
+        #reveal the 4th card phase
         tempRiver.append(self.river[3])
-        print("The Turn: ")
+        print("\nThe Turn: ")
         print(tempRiver)
         self.betting_phase(active)              #betting phase 3 (last)
+        #reveal 5th card phase
         tempRiver.append(self.river[4])
-        print("The River: ")
+        print("\nThe River: ")
         print(tempRiver)
-        #go through each player and see which one has the best hand
-        strongest = Player("temp")  #place holder for strongest player
-        for player in self.players.values():
-            strength = self.optimal_hand(player.hand, self.river)
-            if strength[0] < strongest.strength[0]:
-                strongest = player
-            #if the hand strength ties, check which one has the highest card
-            elif strength[0] == strongest[0]:
-                if strength[1]>strongest[1]:
-                    strongest = player
-                #if the first hgih card check ties then check the other high card, this case only applies to 2 pairs and pairs
-                elif strength[1] == strongest[1]:
-                    if strength[2]>strongest[2]:
-                        strongest = player
+        strongest = self.strongest_player(active)
         #ending the round and  declaring the winner,giving them the chips from the pot
-        print(f"the winner of this round is {strongest.user}, wining {self.pot} chips!")
-        strongest.player.chips+=self.pot
-        self.pot = 0 
+        print(f"the winner of this round is {strongest.user}, with {strongest.strength[len(strongest.strength)-1]} and has won {self.pot} chips!\n")
+        strongest.chips+=self.pot
+        self.round_reset(active)
     
     #function that handles the betting phase
     #param & return: none
@@ -113,7 +102,6 @@ class TexasHold(object):
         while not done:
             done = True
             #go through each player that hasnt folded and to get their bets
-            print(activePlayers)
             for user in activePlayers:
                 #players can only bet if they have chips (if a player goes all in they get skipped)
                 if self.players[user].chips!=0:
@@ -330,7 +318,6 @@ class TexasHold(object):
         #check to find the strongest possible combo 
         strongest = strengths[0]
         for combo in strengths:
-            print(combo)
             #check if the ranking of the strength is lower  (lower is stronger)
             if strongest[0] > combo[0]:
                 strongest = combo
@@ -340,27 +327,51 @@ class TexasHold(object):
                     strongest = combo
         return strongest
 
+    #finds the player with the strongest hand
+    #param: none
+    #return: player object with the strongest hand
+    def strongest_player(self, activePlayers):
+        strongest = Player("temp")  #place holder for strongest player
+        #go through each player and see which one has the best hand
+        for user in activePlayers:
+            strength = self.optimal_hand(self.players[user].hand, self.river)
+            #compare by hand type strength first
+            if strength[0] < strongest.strength[0]:
+                strongest = self.players[user]
+            #if the hand strength ties, check which one has the highest card
+            elif strength[0] == strongest.strength[0]:
+                if strength[1]>strongest.strength[1]:
+                    strongest = self.players[user]
+                #if the first hgih card check ties then check the other high card, this case only applies to 2 pairs and pairs
+                elif strength[1] == strongest.strength[1]:
+                    if strength[2]>strongest.strength[2]:
+                        strongest = self.players[user]
+        return strongest
+        
     #function to reset values and clear hands after a round ends
-    def round_reset(self):
+    #param: activePlayer(lsit of players partaking in the round)
+    #return: none
+    def round_reset(self, activePlayers):
         self.currBet = 0
         #looping through each player to: clear his hand, reset the fold bool, reset player bet for the round
-        for player in self.players:
-            player.bet = 0
-            player.fold = False
+        for player in activePlayers:
+            self.players[player].bet = 0
+            self.players[player].fold = False
             #moves cards from player hands pile to the discard pile
-            toEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/draw/?count=2".format(self.deckID, player.user))
+            toEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/draw/?count=2".format(self.deckID, self.players[player].user))
             toEmpty = toEmpty.json()
-            for card in toEmpty["piles"][player.user]["cards"]:
+            for card in toEmpty["cards"]:
                 requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/add/?cards={}".format(self.deckID, card["code"]))
-            player.hand.clear()
+            self.players[player].hand.clear()
         #clear the river
         riverEmpty = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/river/draw/?count=2".format(self.deckID))
         riverEmpty = riverEmpty.json()
-        for card in riverEmpty["piles"]["river"]["cards"]:
+        for card in riverEmpty["cards"]:
             requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/add/?cards={}".format(self.deckID, card["code"]))
         self.river.clear()
 
-    #function that will run multiple rounds of the game, game only ends if 
+    #function that will run multiple rounds of the game, game only ends if 1 person remains
+    #param and return: none
     def game(self):
         going = True
         self.players["player1"] = Player("player1")
@@ -371,13 +382,15 @@ class TexasHold(object):
             self.ante()
             self.round()
             #find players with 0 chips and remove them from the game
+            delete = []
             for user in self.players:
                 if self.players[user].chips == 0:
-                    del self.players[user]
+                    delete.append(user)
+            for user in delete:
+                del self.players[user]
             #if the amount of players is less than 2 then the game's over
-            if len(self.players<2):
+            if len(self.players)<2:
                 going = False
-            self.round_reset()
             
     #deals with player's ante'ing in to enter a round
     #param and return: none
