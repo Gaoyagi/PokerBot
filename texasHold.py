@@ -78,22 +78,33 @@ class TexasHold(object):
             tempRiver.append(self.river[x])
         print("\nThe Flop: ")
         print(tempRiver)
+        self.print_hands(active)
         self.betting_phase(active)              #betting phase 2
         #reveal the 4th card phase
         tempRiver.append(self.river[3])
         print("\nThe Turn: ")
         print(tempRiver)
+        self.print_hands(active)
         self.betting_phase(active)              #betting phase 3 (last)
         #reveal 5th card phase
         tempRiver.append(self.river[4])
         print("\nThe River: ")
         print(tempRiver)
+        self.print_hands(active)
         strongest = self.strongest_player(active)
         #ending the round and  declaring the winner,giving them the chips from the pot
         print(f"the winner of this round is {strongest.user}, with {strongest.strength[len(strongest.strength)-1]} and has won {self.pot} chips!\n")
         strongest.chips+=self.pot
         self.round_reset(active)
     
+    #prints out all active player hands
+    #param: list of active players
+    #return: none
+    def print_hands(self, activePlayers):
+        for key in activePlayers:
+            if self.players[key].fold == False:
+                print(f"{key}'s hand: {self.players[key].hand}")
+
     #function that handles the betting phase
     #param & return: none
     def betting_phase(self, activePlayers):
@@ -288,7 +299,6 @@ class TexasHold(object):
     def optimal_hand(self, hand, river):
         strengths = []                  #list of every possible hand strength
         available = hand+river          #cards that available to make a hand out of
-        print(available)
         possible = []                   #current iteration of the possible 5 card combination
         #loop through every 5 hand card combination
         for a in range(len(available)):
@@ -332,13 +342,13 @@ class TexasHold(object):
     #return: player object with the strongest hand
     def strongest_player(self, activePlayers):
         strongest = Player("temp")  #place holder for strongest player
-        #go through each player and see which one has the best hand
+        #go through each active player and see which one has the best hand
         for user in activePlayers:
-            strength = self.optimal_hand(self.players[user].hand, self.river)
+            strength = self.optimal_hand(self.players[user].hand, self.river)   #current player's strength
             #compare by hand type strength first
             if strength[0] < strongest.strength[0]:
-                strongest = self.players[user]
-            #if the hand strength ties, check which one has the highest card
+                strongest = self.players[user]      #reassign strongest if current strength is stronger
+            #if the hand strength ties, check which one has the highest card then reassign
             elif strength[0] == strongest.strength[0]:
                 if strength[1]>strongest.strength[1]:
                     strongest = self.players[user]
@@ -346,7 +356,7 @@ class TexasHold(object):
                 elif strength[1] == strongest.strength[1]:
                     if strength[2]>strongest.strength[2]:
                         strongest = self.players[user]
-        return strongest
+        return strongest    
         
     #function to reset values and clear hands after a round ends
     #param: activePlayer(lsit of players partaking in the round)

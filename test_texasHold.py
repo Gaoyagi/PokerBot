@@ -247,3 +247,19 @@ class TestTexasHold:
         assert str5[0] == 5
         assert str5[1] == 8
 
+    def test_strongest_player(self):
+        game = TexasHold()
+        user1 = "test1"
+        game.players[user1] = Player(user1)
+        user2 = "test2"
+        game.players[user2] = Player(user2)
+
+        game.players[user1].hand = ['3C', '5S'] #should have a pair
+        game.players[user2].hand = ['KH', '4S'] #should have high card
+        game.river = ['9C', 'JD', '6D', '3D', '9H']
+        active = ["test1", "test2"]
+        print(game.optimal_hand(game.players[user1].hand, game.river))
+        print(game.optimal_hand(game.players[user2].hand, game.river))
+        temp = game.strongest_player(active)
+        print(temp.strength)
+        assert temp ==  game.players[user1]
