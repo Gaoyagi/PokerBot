@@ -109,6 +109,7 @@ class TexasHold(object):
     #param & return: none
     def betting_phase(self, activePlayers):
         done = False
+        timesBet=0
         #keep betting until all is done
         while not done:
             done = True
@@ -116,19 +117,21 @@ class TexasHold(object):
             for user in activePlayers:
                 #players can only bet if they have chips (if a player goes all in they get skipped)
                 if self.players[user].chips!=0:
-                    #ask for user input for bet, only will take num >= -1
-                    valid = False
-                    #player inputs bet and then program checks if bet is above the bet as a whole
-                    while not valid:
-                        print(f"\ncurrent bet per person: {self.currBet}")
-                        print(f"{user} current chips: {self.players[user].chips}")
-                        print(f"{user}'s current bet: {self.players[user].bet}")
-                        value = input(f"({user}): enter your bet (0 to check or call, -1 to fold, other to raise): ")
-                        valid = self.betting(int(value), self.players[user], self.currBet)     
-                    #if everyone has gotten a chance to bet at least once and there is a raise, then continue the betting loop
-                    if self.players[user].bet>self.currBet:
-                        done = False
-                    self.currBet = self.players[user].bet
+                    if self.players[user].bet == self.currBet and timesBet>len(activePlayers)-1:
+                        #ask for user input for bet, only will take num >= -1
+                        valid = False
+                        #player inputs bet and then program checks if bet is above the bet as a whole
+                        while not valid:
+                            print(f"\ncurrent bet per person: {self.currBet}")
+                            print(f"{user} current chips: {self.players[user].chips}")
+                            print(f"{user}'s current bet: {self.players[user].bet}")
+                            value = input(f"({user}): enter your bet (0 to check or call, -1 to fold, other to raise): ")
+                            valid = self.betting(int(value), self.players[user], self.currBet)     
+                        #if everyone has gotten a chance to bet at least once and there is a raise, then continue the betting loop
+                        if self.players[user].bet>self.currBet:
+                            done = False
+                        self.currBet = self.players[user].bet
+                        timesBet+=1 
     
     #checks if a player bet is a call, raise, check, or a fold. then changes the pot and player's bet accordingly
     #param: user string whos betting, amount number that theyre betting
@@ -318,16 +321,21 @@ class TexasHold(object):
                                         if e!=d and e!=c and e!=b and e!=a:
                                             possible.append(available[e])       #append 5th card
                                             #print("Possible", possible)
-                                            strength = self.hand_value(possible)    #calculate current hand strength
+                                            strength = self.hand_value(possible.copy())    #calculate current hand strength
                                             strengths.append(strength)       #add the strength to strengths list
+                                            # print("Appending", strength)
                                             del possible[len(possible)-1]
                                     del possible[len(possible)-1]
                             del possible[len(possible)-1]
                     del possible[len(possible)-1]
             del possible[len(possible)-1]
         #check to find the strongest possible combo 
+        # print(strengths)
+        print(strengths[0])
         strongest = strengths[0]
+        # print("First strongest", strongest)
         for combo in strengths:
+            # print("Combo", combo)
             #check if the ranking of the strength is lower  (lower is stronger)
             if strongest[0] > combo[0]:
                 strongest = combo
@@ -335,6 +343,7 @@ class TexasHold(object):
             elif strongest[0] ==  combo[0]:
                 if strongest[1] < combo[1]:
                     strongest = combo
+        # print(strongest)
         return strongest
 
     #finds the player with the strongest hand
@@ -345,6 +354,7 @@ class TexasHold(object):
         #go through each active player and see which one has the best hand
         for user in activePlayers:
             strength = self.optimal_hand(self.players[user].hand, self.river)   #current player's strength
+            self.players[user].strength = strength
             #compare by hand type strength first
             if strength[0] < strongest.strength[0]:
                 strongest = self.players[user]      #reassign strongest if current strength is stronger
@@ -390,6 +400,8 @@ class TexasHold(object):
         self.players["player4"] = Player("player4")  
         while going:
             self.ante()
+            if len(self.players)<1:
+                break
             self.round()
             #find players with 0 chips and remove them from the game
             delete = []

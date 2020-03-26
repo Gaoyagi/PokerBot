@@ -200,32 +200,39 @@ class TestTexasHold:
         hand1 = ["3S", "QC"]
         river1 = ["2C", "0C", "5H", "2D", "6H"]
         str1 = game.optimal_hand(hand1, river1)
+        print(str1)
 
         #triples
         hand2 = ["KC", "5H"]
         river2 = ["4H", "3C", "8H", "5D", "5S"]
         str2 = game.optimal_hand(hand2, river2)
+        print(str2)
 
         #2 pair 
-        hand3 = ["5C", "5H"]
-        river3 = ["4H", "3C", "8H", "6D", "6S"]
+        hand3 = ['3C', '5S']
+        river3 = ['9C', 'JD', '6D', '3D', '9H']
         str3 = game.optimal_hand(hand3, river3)
+        print(str3)
 
         #flush 
         hand4 = ["5C", "0H"]
         river4 = ["4H", "3H", "8H", "6H", "6S"]
         str4 = game.optimal_hand(hand4, river4)
+        print(str4)
 
         #straight 
         hand5 = ["5C", "5H"]
         river5 = ["4H", "3C", "8H", "6D", "7S"]
         str5 = game.optimal_hand(hand5, river5)
+        print(str5)
 
         #pair test
         assert len(str1) == 4
         assert str1[0] == 8
         assert str1[1] == 2
         assert str1[2] == 12
+        assert '2C' in str1[3]
+        assert '2D' in str1[3]
 
         #triples test
         assert len(str2) == 3
@@ -235,8 +242,8 @@ class TestTexasHold:
         #2 pair test
         assert len(str3) == 4
         assert str3[0] == 7
-        assert str3[1] == 5
-        assert str3[2] == 6
+        assert str3[1] == 3
+        assert str3[2] == 9
 
         #flush
         assert len(str4) == 2
@@ -249,17 +256,20 @@ class TestTexasHold:
 
     def test_strongest_player(self):
         game = TexasHold()
+        #create 2 sample users
         user1 = "test1"
         game.players[user1] = Player(user1)
         user2 = "test2"
         game.players[user2] = Player(user2)
-
-        game.players[user1].hand = ['3C', '5S'] #should have a pair
-        game.players[user2].hand = ['KH', '4S'] #should have high card
+        active = ["test1", "test2"]    #list of active users in the game
+        #give each sample player a hand and make a sample river
+        game.players[user1].hand = ['3C', '5S'] #should have 2 pair
+        game.players[user2].hand = ['KH', '4S'] #should have a pair
         game.river = ['9C', 'JD', '6D', '3D', '9H']
-        active = ["test1", "test2"]
+    
         print(game.optimal_hand(game.players[user1].hand, game.river))
         print(game.optimal_hand(game.players[user2].hand, game.river))
         temp = game.strongest_player(active)
         print(temp.strength)
-        assert temp ==  game.players[user1]
+
+        assert temp == game.players[user1]  #strongest should be user1
