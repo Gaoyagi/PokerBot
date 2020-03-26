@@ -118,20 +118,22 @@ class TexasHold(object):
                 #players can only bet if they have chips (if a player goes all in they get skipped)
                 if self.players[user].chips!=0:
                     if self.players[user].bet == self.currBet and timesBet>len(activePlayers)-1:
-                        #ask for user input for bet, only will take num >= -1
-                        valid = False
-                        #player inputs bet and then program checks if bet is above the bet as a whole
-                        while not valid:
-                            print(f"\ncurrent bet per person: {self.currBet}")
-                            print(f"{user} current chips: {self.players[user].chips}")
-                            print(f"{user}'s current bet: {self.players[user].bet}")
-                            value = input(f"({user}): enter your bet (0 to check or call, -1 to fold, other to raise): ")
-                            valid = self.betting(int(value), self.players[user], self.currBet)     
-                        #if everyone has gotten a chance to bet at least once and there is a raise, then continue the betting loop
-                        if self.players[user].bet>self.currBet:
-                            done = False
-                        self.currBet = self.players[user].bet
-                        timesBet+=1 
+                        continue
+                    #ask for user input for bet, only will take num >= -1
+                    valid = False
+                    #player inputs bet and then program checks if bet is above the bet as a whole
+                    while not valid:
+                        print(f"\ncurrent bet per person: {self.currBet}")
+                        print(f"current pot: {self.pot}")
+                        print(f"{user} current chips: {self.players[user].chips}")
+                        print(f"{user}'s current bet: {self.players[user].bet}")
+                        value = input(f"({user}): enter your bet (0 to check or call, -1 to fold, other to raise): ")
+                        valid = self.betting(int(value), self.players[user], self.currBet)     
+                    #if everyone has gotten a chance to bet at least once and there is a raise, then continue the betting loop
+                    if self.players[user].bet>self.currBet:
+                        done = False
+                    self.currBet = self.players[user].bet
+                    timesBet+=1 
     
     #checks if a player bet is a call, raise, check, or a fold. then changes the pot and player's bet accordingly
     #param: user string whos betting, amount number that theyre betting
