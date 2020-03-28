@@ -25,9 +25,9 @@ class TestTexasHold:
         assert game.players[user].bet == 0
         assert game.players[user].strength[0] == 10
     
-    def test_river(self):
+    def test_make_river(self):
         game = TexasHold()
-        game.make_river()
+        game.river = game.make_river(game.deckID)
         req = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/discard/list/".format(game.deckID))
         req = req.json()
         assert len(game.river) == 5
@@ -40,10 +40,10 @@ class TestTexasHold:
         #check or call assert cases
         game.deal_player(user1)
         assert game.betting(0, game.players[user1], 0) == True      #player checks
-        assert game.players[user1].chips == 200                      #make sure the players chips havent changed
+        assert game.players[user1].chips == 200                     #make sure the players chips havent changed
         assert game.betting(0, game.players[user1], 100) == True    #player calls
-        assert game.players[user1].chips == 100                      #make sure the appropriate chips were subtracted
-        assert game.players[user1].bet == 100                        #make sure the player's bet increased accordingly
+        assert game.players[user1].chips == 100                     #make sure the appropriate chips were subtracted
+        assert game.players[user1].bet == 100                       #make sure the player's bet increased accordingly
        
         #fold assert case:
         user2 = "test2"
@@ -269,7 +269,7 @@ class TestTexasHold:
     
         print(game.optimal_hand(game.players[user1].hand, game.river))
         print(game.optimal_hand(game.players[user2].hand, game.river))
-        temp = game.strongest_player(active)
+        temp = game.strongest_player(active, game.players, game.river)
         print(temp.strength)
 
         assert temp == game.players[user1]  #strongest should be user1

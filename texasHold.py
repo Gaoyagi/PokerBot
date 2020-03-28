@@ -7,17 +7,16 @@ class Player(object):
         self.user = user        #makes the "name" of the user
         self.fold = False       #bool flag for if the player has folded a round
         self.bet = 0            #int counter for how much a player has bet this round
-        self.strength = (10,)      #a tuple for what the strength of your hand is
+        self.strength = (10,)   #a tuple for what the strength of your hand is
 
 class TexasHold(object):
     def __init__(self):
-        self.players = {}     #dic of player objects in this game
-        self.gameID = 0       #game ID is equivalent to the tweet ID
-        self.river = []       #set of face up cards for the round
-        self.pot = 0          #current pot for the the round
-        self.currBet = 0      #the amount each player should have in the pot
+        self.players = {}                       #dic of player objects in this game
+        self.river = []                         #set of face up cards for the round
+        self.pot = 0                            #current pot for the the round
+        self.currBet = 0                        #the amount each player should have in the pot
         self.deck = requests.get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")    #gets API request for a new deck 
-        self.deck = self.deck.json()    #coverts api request to json
+        self.deck = self.deck.json()            #coverts api request to json
         self.deckID = self.deck["deck_id"]      #deck ID
 
     #draws a card from a deck or a pile and adds it to another pile
@@ -31,6 +30,15 @@ class TexasHold(object):
         for card in drawn["cards"]: 
             requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/add/?cards={}".format(self.deckID, pile, card["code"]))
         
+    #adds all the players to the game
+    #param: user(a list of strings of players twitter handles)
+    #return: dictionary of player objects
+    def add_players(self, users):
+        players = {}
+        for name in users:
+            players[name] = Player(name)
+        return players
+            
     #deals a player into this round
     #param: user(twitter user name/id string)
     #return: none
@@ -43,71 +51,77 @@ class TexasHold(object):
         for card in req["piles"][user]["cards"]:
             self.players[user].hand.append(card["code"])
        
-
     #draws the 5 cards for the river and burns 3 cards to discard
-    #param: none
-    #return: none
-    def make_river(self):
+    #param: deckID(deck ID for this game)
+    #return: list of card codes that makes up the river
+    def make_river(self, deckID):
         self.draw_to_pile(3, "discard")
         self.draw_to_pile(5, "river")
-        faceUp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(self.deckID, "river"))
+        faceUp = requests.get("https://deckofcardsapi.com/api/deck/{}/pile/{}/list/".format(deckID, "river"))
         faceUp = faceUp.json()
+        river = []
         for card in faceUp["piles"]["river"]["cards"]:
-            self.river.append(card["code"])
+            river.append(card["code"])
+        return river
 
     #running a round texas hold em
-    #param & return: none
-    def round(self):
+    #param: deck(api request for a deck object), deckID(id for a deck used for api requests), players(ditionary of all players in the game)
+    #       currBet(int of how muche each player should have bet this round), pot(int for the total bet in the round), 
+    #       river(list of card codes that make up the river for this round)
+    #return: none
+    def round(self, deck, deckID, players, currBet, pot, river):
         #check of the deck has enouch cards left for a full round and if not reshuffle
         if self.deck["remaining"] < 16:
             requests.get("https://deckofcardsapi.com/api/deck/{}/shuffle/".format(self.deckID))
-        active = []
-        #only deals all the players in if they paid the ante
+        #only deals all the players in if they paid the ante and then adds them to an active users list
+        active = []     #list to hold all the users of active in the round
         for key in self.players:
             if self.players[key].fold == False:
                 self.deal_player(key)
                 print(f"{key}'s hand is: {self.players[key].hand}")
                 active.append(key)
 
-        self.betting_phase(active)              #betting phase 1
+        self.betting_phase(active, self.players, self.currBet)              #betting phase 1
         #make the river 
-        self.make_river()
+        self.river = self.make_river(self.deckID)
         tempRiver = []
         # reveal the first 3 cards phase
         for x in range(3):
             tempRiver.append(self.river[x])
         print("\nThe Flop: ")
         print(tempRiver)
-        self.print_hands(active)
-        self.betting_phase(active)              #betting phase 2
+        self.print_hands(active, self.players)
+        self.betting_phase(active, self.players, self.currBet)              #betting phase 2
         #reveal the 4th card phase
         tempRiver.append(self.river[3])
         print("\nThe Turn: ")
         print(tempRiver)
-        self.print_hands(active)
-        self.betting_phase(active)              #betting phase 3 (last)
+        self.print_hands(active, self.players)
+        self.betting_phase(active, self.players, self.currBet)              #betting phase 3 (last)
         #reveal 5th card phase
         tempRiver.append(self.river[4])
         print("\nThe River: ")
         print(tempRiver)
-        self.print_hands(active)
-        strongest = self.strongest_player(active)
+        self.print_hands(active, self.players)
+        strongest = self.strongest_player(active, self.players, self.river)
         #ending the round and  declaring the winner,giving them the chips from the pot
         print(f"the winner of this round is {strongest.user}, with {strongest.strength[len(strongest.strength)-1]} and has won {self.pot} chips!\n")
         strongest.chips+=self.pot
         self.round_reset(active)
     
     #prints out all active player hands
-    #param: list of active players
+    #param: activePlayers(list of active players usernames), players(dictionary of all the player objects in game)
     #return: none
-    def print_hands(self, activePlayers):
+    def print_hands(self, activePlayers, players):
         for key in activePlayers:
-            if self.players[key].fold == False:
-                print(f"{key}'s hand: {self.players[key].hand}")
+            if players[key].fold == False:
+                print(f"{key}'s hand: {players[key].hand}")
 
     #function that handles the betting phase
-    #param & return: none
-    def betting_phase(self, activePlayers):
+    #param: activePlayers(list of active players usernames), players(dictionary of all the player objects in game), 
+    #       currBet(int of how much each player should have in the pot), pot(int of the total pot amount)
+    #return: none
+    def betting_phase(self, activePlayers, players, currBet):
         done = False
         timesBet=0
         #keep betting until all is done
@@ -115,28 +129,30 @@ class TexasHold(object):
             done = True
             #go through each player that hasnt folded and to get their bets
             for user in activePlayers:
-                #players can only bet if they have chips (if a player goes all in they get skipped)
-                if self.players[user].chips!=0:
-                    if self.players[user].bet == self.currBet and timesBet>len(activePlayers)-1:
+                #players can only bet if they have chips (if a player went all in before they also get skipped)
+                if players[user].chips!=0:
+                    #check if the players current bet matches the round's current bet AND everyone in this betting phase has had a chance to bet already
+                    if players[user].bet == currBet and timesBet>len(activePlayers)-1:
                         continue
                     #ask for user input for bet, only will take num >= -1
                     valid = False
                     #player inputs bet and then program checks if bet is above the bet as a whole
                     while not valid:
-                        print(f"\ncurrent bet per person: {self.currBet}")
+                        print(f"\ncurrent bet per person: {currBet}")
                         print(f"current pot: {self.pot}")
-                        print(f"{user} current chips: {self.players[user].chips}")
-                        print(f"{user}'s current bet: {self.players[user].bet}")
+                        print(f"{user} current chips: {players[user].chips}")
+                        print(f"{user}'s current bet: {players[user].bet}")
                         value = input(f"({user}): enter your bet (0 to check or call, -1 to fold, other to raise): ")
-                        valid = self.betting(int(value), self.players[user], self.currBet)     
+                        valid = self.betting(int(value), players[user], currBet)     
                     #if everyone has gotten a chance to bet at least once and there is a raise, then continue the betting loop
-                    if self.players[user].bet>self.currBet:
+                    if players[user].bet>currBet:
                         done = False
-                    self.currBet = self.players[user].bet
+                    currBet = players[user].bet
                     timesBet+=1 
     
     #checks if a player bet is a call, raise, check, or a fold. then changes the pot and player's bet accordingly
-    #param: user string whos betting, amount number that theyre betting
+    #param: value(amount number that theyre betting), player(player object who is betting), 
+    #       currBet(current bet per player in this round). pot(total amount bet for this rounf)
     #return: Bool for if the bet was valid or not
     def betting(self, value, player, currBet):
         #if the player folds
@@ -333,7 +349,6 @@ class TexasHold(object):
             del possible[len(possible)-1]
         #check to find the strongest possible combo 
         # print(strengths)
-        print(strengths[0])
         strongest = strengths[0]
         # print("First strongest", strongest)
         for combo in strengths:
@@ -349,25 +364,25 @@ class TexasHold(object):
         return strongest
 
     #finds the player with the strongest hand
-    #param: none
+    #param: activePlayers(list of username strings in this round), players(dictionary of all the player objects in the game), river(lsit of card codes in the round's river)
     #return: player object with the strongest hand
-    def strongest_player(self, activePlayers):
+    def strongest_player(self, activePlayers, players, river):
         strongest = Player("temp")  #place holder for strongest player
         #go through each active player and see which one has the best hand
         for user in activePlayers:
-            strength = self.optimal_hand(self.players[user].hand, self.river)   #current player's strength
+            strength = self.optimal_hand(players[user].hand, river)   #current player's strength
             self.players[user].strength = strength
             #compare by hand type strength first
             if strength[0] < strongest.strength[0]:
-                strongest = self.players[user]      #reassign strongest if current strength is stronger
+                strongest = players[user]      #reassign strongest if current strength is stronger
             #if the hand strength ties, check which one has the highest card then reassign
             elif strength[0] == strongest.strength[0]:
                 if strength[1]>strongest.strength[1]:
-                    strongest = self.players[user]
+                    strongest = players[user]
                 #if the first hgih card check ties then check the other high card, this case only applies to 2 pairs and pairs
                 elif strength[1] == strongest.strength[1]:
                     if strength[2]>strongest.strength[2]:
-                        strongest = self.players[user]
+                        strongest = players[user]
         return strongest    
         
     #function to reset values and clear hands after a round ends
@@ -396,15 +411,14 @@ class TexasHold(object):
     #param and return: none
     def game(self):
         going = True
-        self.players["player1"] = Player("player1")
-        self.players["player2"] = Player("player2")
-        self.players["player3"] = Player("player3")
-        self.players["player4"] = Player("player4")  
+        users = ["player1", "player2", "player3", "player3", "player3", "player4"]
+        game.players = self.add_players(users)
         while going:
-            self.ante()
+            self.ante(self.players)
             if len(self.players)<1:
+                print("not enough people, game ending")
                 break
-            self.round()
+            self.round(self.deck, self.deckID, self.players, self.currBet, self.pot, self.river)
             #find players with 0 chips and remove them from the game
             delete = []
             for user in self.players:
@@ -417,31 +431,32 @@ class TexasHold(object):
                 going = False
             
     #deals with player's ante'ing in to enter a round
-    #param and return: none
-    def ante(self):
+    #param: players(dic of all player objects in the game), pot(int of the total chips bet)
+    #return: none
+    def ante(self, players):
         remove = []
-        for user in self.players:
+        for user in players:
             invalid = True
             while invalid:
                 ans = input(f"({user}): press 0 to put in your ante (10 chips) for the round, 1 to sit out of this round, and 2 to quit the game entirely: ")
                 invalid = False
                 ans = int(ans)
                 if ans == 0:
-                    if self.players[user].chips<10:
-                        self.pot+=self.players[user].chips
-                        self.players[user].chips = 0    
+                    if players[user].chips<10:
+                        self.pot+=players[user].chips
+                        players[user].chips = 0    
                     else:
                         self.pot+=10
-                        self.players[user].chips-=10
+                        players[user].chips-=10
                 elif ans == 1:
-                    self.players[user].fold = True
+                    players[user].fold = True
                 elif ans == 2:
                     remove.append(user)
                 else:
                     print("not a valid option")
                     invalid = True
         for user in remove:
-            del self.players[user]
+            del players[user]
         
 
 
@@ -457,8 +472,5 @@ class TexasHold(object):
 
 if __name__ == '__main__':
     game = TexasHold()
-    # for _ in range(4):
-    #     name = ("imput player name: ")
-    #     game.players[name] = Player(name)  
     game.game()
     
